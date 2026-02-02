@@ -3,8 +3,10 @@ export enum AppView {
   DASHBOARD = 'dashboard',
   CRAWLER = 'crawler',
   AI_SELECTOR = 'ai_selector',
+  BID_PLAN = 'bid_plan',
   KNOWLEDGE_BASE = 'knowledge_base',
   BID_WORKSPACE = 'bid_workspace',
+  AGENT_CONFIG = 'agent_config',
   ADMIN = 'admin'
 }
 
@@ -17,6 +19,12 @@ export interface Tender {
   status: 'new' | 'analyzed' | 'processed';
   summary?: string;
   budget?: string;
+}
+
+export interface BiddingTask extends Tender {
+  manager?: string;
+  assignDate?: string;
+  priority: 'high' | 'medium' | 'low';
 }
 
 export interface ProjectExperience {
