@@ -25,6 +25,7 @@ export interface BiddingTask extends Tender {
   manager?: string;
   assignDate?: string;
   priority: 'high' | 'medium' | 'low';
+  source?: 'crawler' | 'ai';
 }
 
 export interface ProjectExperience {

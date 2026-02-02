@@ -31,11 +31,12 @@ const App: React.FC = () => {
   // Shared state for bidding tasks across views
   const [plannedTasks, setPlannedTasks] = useState<BiddingTask[]>([]);
 
-  const addToPlan = (tender: Tender | any) => {
+  const addToPlan = (tender: Tender | any, source: 'crawler' | 'ai' = 'crawler') => {
     if (plannedTasks.find(t => t.id === tender.id)) return;
     const newTask: BiddingTask = {
       ...tender,
       priority: 'medium',
+      source,
     };
     setPlannedTasks([...plannedTasks, newTask]);
   };
@@ -62,8 +63,18 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (currentView) {
       case AppView.DASHBOARD: return <DashboardView />;
-      case AppView.CRAWLER: return <CrawlerView plannedIds={plannedTasks.map(t => t.id)} onTogglePlan={(t) => plannedTasks.find(p => p.id === t.id) ? removeFromPlan(t.id) : addToPlan(t)} />;
-      case AppView.AI_SELECTOR: return <AISelectorView plannedIds={plannedTasks.map(t => t.id)} onTogglePlan={addToPlan} />;
+      case AppView.CRAWLER: return (
+        <CrawlerView 
+          plannedIds={plannedTasks.map(t => t.id)} 
+          onTogglePlan={(t) => plannedTasks.find(p => p.id === t.id) ? removeFromPlan(t.id) : addToPlan(t, 'crawler')} 
+        />
+      );
+      case AppView.AI_SELECTOR: return (
+        <AISelectorView 
+          plannedIds={plannedTasks.map(t => t.id)} 
+          onTogglePlan={(t) => addToPlan(t, 'ai')} 
+        />
+      );
       case AppView.BID_PLAN: return <BiddingPlanView tasks={plannedTasks} onUpdateTask={updateTask} onRemoveTask={removeFromPlan} />;
       case AppView.KNOWLEDGE_BASE: return <KnowledgeBaseView />;
       case AppView.BID_WORKSPACE: return <BidWorkspaceView />;
