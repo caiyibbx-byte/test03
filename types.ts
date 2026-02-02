@@ -7,6 +7,7 @@ export enum AppView {
   TEMPLATE_CONFIG = 'template_config',
   KNOWLEDGE_BASE = 'knowledge_base',
   BID_WORKSPACE = 'bid_workspace',
+  LOG_MANAGEMENT = 'log_management',
   AGENT_CONFIG = 'agent_config',
   ADMIN = 'admin'
 }

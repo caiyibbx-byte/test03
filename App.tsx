@@ -13,7 +13,8 @@ import {
   UserCircle,
   Settings2,
   CalendarDays,
-  LayoutTemplate
+  LayoutTemplate,
+  Activity
 } from 'lucide-react';
 import { AppView, BiddingTask, Tender } from './types';
 import DashboardView from './components/DashboardView';
@@ -25,6 +26,7 @@ import BidWorkspaceView from './components/BidWorkspaceView';
 import AgentConfigView from './components/AgentConfigView';
 import AdminView from './components/AdminView';
 import TemplateConfigView from './components/TemplateConfigView';
+import LogManagementView from './components/LogManagementView';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
@@ -86,6 +88,7 @@ const App: React.FC = () => {
     { id: AppView.TEMPLATE_CONFIG, label: '投标文档模板配置', icon: LayoutTemplate },
     { id: AppView.KNOWLEDGE_BASE, label: '业绩人员库', icon: Database },
     { id: AppView.BID_WORKSPACE, label: '智能文书编撰', icon: FileText },
+    { id: AppView.LOG_MANAGEMENT, label: '系统日志管理', icon: Activity },
     { id: AppView.AGENT_CONFIG, label: '智能体参数配置', icon: Settings2 },
     { id: AppView.ADMIN, label: '权限角色管理', icon: ShieldCheck },
   ];
@@ -109,6 +112,7 @@ const App: React.FC = () => {
       case AppView.TEMPLATE_CONFIG: return <TemplateConfigView />;
       case AppView.KNOWLEDGE_BASE: return <KnowledgeBaseView />;
       case AppView.BID_WORKSPACE: return <BidWorkspaceView />;
+      case AppView.LOG_MANAGEMENT: return <LogManagementView />;
       case AppView.AGENT_CONFIG: return <AgentConfigView />;
       case AppView.ADMIN: return <AdminView />;
       default: return <DashboardView />;
