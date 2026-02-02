@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Download, RefreshCcw, Eye, FileText, CheckCircle2, AlertCircle, PlusCircle, CheckCircle } from 'lucide-react';
+import { Download, RefreshCcw, Eye, FileText, CircleCheckBig, AlertCircle, PlusCircle, CircleCheck } from 'lucide-react';
 import { Tender } from '../types';
 
 const mockTenders: Tender[] = [
@@ -94,7 +94,7 @@ const CrawlerView: React.FC<CrawlerViewProps> = ({ plannedIds, onTogglePlan }) =
                       )}
                       {tender.status === 'analyzed' && (
                         <span className="flex items-center text-emerald-600 text-xs font-medium">
-                          <CheckCircle2 size={14} className="mr-1" /> 已解析
+                          <CircleCheckBig size={14} className="mr-1" /> 已解析
                         </span>
                       )}
                       {tender.status === 'processed' && (
@@ -116,7 +116,7 @@ const CrawlerView: React.FC<CrawlerViewProps> = ({ plannedIds, onTogglePlan }) =
                         >
                           {isInPlan ? (
                             <>
-                              <CheckCircle size={14} className="mr-1.5" />
+                              <CircleCheck size={14} className="mr-1.5" />
                               已入计划
                             </>
                           ) : (

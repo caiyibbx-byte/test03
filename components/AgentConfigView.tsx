@@ -1,20 +1,20 @@
+
 import React, { useState } from 'react';
 import { 
   Settings, 
   Image, 
   FileJson, 
   Cpu, 
-  AlertTriangle, 
+  TriangleAlert, 
   Save, 
   RotateCcw, 
   Play, 
   History, 
   Upload,
-  CheckCircle2,
+  CircleCheckBig,
   ChevronDown
 } from 'lucide-react';
 
-// Fix: Moved ConfigSection outside of AgentConfigView and added explicit React.FC type to fix children prop error
 const ConfigSection: React.FC<{ title: string; icon: any; children: React.ReactNode }> = ({ title, icon: Icon, children }) => (
   <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
     <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center space-x-2">
@@ -27,7 +27,6 @@ const ConfigSection: React.FC<{ title: string; icon: any; children: React.ReactN
   </div>
 );
 
-// Fix: Moved InputField outside and added proper typing
 const InputField: React.FC<{ label: string; description?: string; type?: string; defaultValue?: string; unit?: string }> = ({ label, description, type = "text", defaultValue, unit }) => (
   <div className="space-y-1">
     <label className="text-sm font-semibold text-slate-700 block">{label}</label>
@@ -43,7 +42,6 @@ const InputField: React.FC<{ label: string; description?: string; type?: string;
   </div>
 );
 
-// Fix: Moved SelectField outside and added proper typing
 const SelectField: React.FC<{ label: string; options: string[]; defaultValue?: string }> = ({ label, options, defaultValue }) => (
   <div className="space-y-1">
     <label className="text-sm font-semibold text-slate-700 block">{label}</label>
@@ -60,7 +58,6 @@ const SelectField: React.FC<{ label: string; options: string[]; defaultValue?: s
 );
 
 const AgentConfigView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('params');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
 
   const handleSave = () => {
@@ -92,7 +89,7 @@ const AgentConfigView: React.FC = () => {
             }`}
           >
             {saveStatus === 'saving' ? <RotateCcw size={18} className="mr-2 animate-spin" /> : 
-             saveStatus === 'success' ? <CheckCircle2 size={18} className="mr-2" /> : 
+             saveStatus === 'success' ? <CircleCheckBig size={18} className="mr-2" /> : 
              <Save size={18} className="mr-2" />}
             {saveStatus === 'success' ? '保存成功' : '保存配置'}
           </button>
@@ -127,7 +124,7 @@ const AgentConfigView: React.FC = () => {
             </div>
           </ConfigSection>
 
-          <ConfigSection title="风险预警参数" icon={AlertTriangle}>
+          <ConfigSection title="风险预警参数" icon={TriangleAlert}>
             <div className="grid grid-cols-2 gap-6">
               <InputField label="废标条款风险阈值" defaultValue="0.75" description="AI评估风险概率超过此值将强提醒" />
               <SelectField label="风险提示触发方式" options={['实时弹窗', '消息中心', '每日摘要', '强交互确认']} defaultValue="实时弹窗" />
@@ -158,7 +155,6 @@ const AgentConfigView: React.FC = () => {
         </div>
       </div>
 
-      {/* History Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
           <div className="flex items-center space-x-2">

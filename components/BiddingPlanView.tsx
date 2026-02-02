@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { FileSpreadsheet, UserPlus, Trash2, CheckCircle2, AlertCircle, ChevronDown, Download, Users } from 'lucide-react';
+import { FileSpreadsheet, UserPlus, Trash2, CircleCheckBig, AlertCircle, ChevronDown, Download, Users } from 'lucide-react';
 import { BiddingTask } from '../types';
 
 interface BiddingPlanViewProps {
@@ -57,7 +57,6 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, onUpdateTask, 
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
-          {/* Summary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
               <p className="text-sm text-slate-500">计划中项目</p>
@@ -73,7 +72,6 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, onUpdateTask, 
             </div>
           </div>
 
-          {/* Task List */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <table className="w-full text-left">
               <thead className="text-sm font-semibold text-slate-600 bg-slate-50 border-b border-slate-100">
@@ -149,16 +147,15 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, onUpdateTask, 
             </table>
           </div>
 
-          {/* Personnel Workload Preview */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
             <h3 className="text-lg font-bold mb-6 flex items-center">
               <Users size={20} className="mr-2 text-blue-600" />
               团队负载实时看板
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {biddingManagers.map((m, i) => {
+              {biddingManagers.map((m) => {
                 const assignedCount = tasks.filter(t => t.manager === m).length;
-                const load = (assignedCount / 5) * 100; // Mock calculation
+                const load = (assignedCount / 5) * 100;
                 return (
                   <div key={m} className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <div className="flex justify-between items-center mb-2">

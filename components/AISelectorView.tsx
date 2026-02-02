@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Bot, MessageSquare, Send, Settings, Sparkles, Filter, ChevronRight, PlusCircle, CheckCircle } from 'lucide-react';
+import { Bot, MessageSquare, Send, Settings, Sparkles, Filter, ChevronRight, PlusCircle, CircleCheck } from 'lucide-react';
 
 interface AISelectorViewProps {
   plannedIds: string[];
@@ -19,7 +19,6 @@ const AISelectorView: React.FC<AISelectorViewProps> = ({ plannedIds, onTogglePla
     setMessages(newMessages);
     setInput('');
     
-    // Simulate AI response
     setTimeout(() => {
       setMessages([...newMessages, { role: 'assistant', text: '正在重新评估过滤规则... 好的，已将“低压配电类”项目排除，并优先提升“江苏区域”项目的权重。当前候选集已更新，请查看右侧列表。' }]);
     }, 1000);
@@ -32,7 +31,6 @@ const AISelectorView: React.FC<AISelectorViewProps> = ({ plannedIds, onTogglePla
 
   return (
     <div className="flex h-[calc(100vh-200px)] space-x-6">
-      {/* Rules & Chat Area */}
       <div className="flex-1 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center text-blue-600 font-semibold">
@@ -79,7 +77,6 @@ const AISelectorView: React.FC<AISelectorViewProps> = ({ plannedIds, onTogglePla
         </div>
       </div>
 
-      {/* Candidate Set */}
       <div className="w-96 flex flex-col space-y-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm overflow-y-auto">
           <div className="flex items-center justify-between mb-4">
@@ -106,7 +103,6 @@ const AISelectorView: React.FC<AISelectorViewProps> = ({ plannedIds, onTogglePla
                     <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
                   </div>
                   
-                  {/* Join Bidding Plan Button */}
                   <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-end">
                     <button 
                       onClick={(e) => { e.stopPropagation(); onTogglePlan(item); }}
@@ -118,7 +114,7 @@ const AISelectorView: React.FC<AISelectorViewProps> = ({ plannedIds, onTogglePla
                     >
                       {isInPlan ? (
                         <>
-                          <CheckCircle size={14} className="mr-1.5" />
+                          <CircleCheck size={14} className="mr-1.5" />
                           已入投标计划
                         </>
                       ) : (
