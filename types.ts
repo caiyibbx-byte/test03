@@ -4,6 +4,7 @@ export enum AppView {
   CRAWLER = 'crawler',
   AI_SELECTOR = 'ai_selector',
   BID_PLAN = 'bid_plan',
+  TEMPLATE_CONFIG = 'template_config',
   KNOWLEDGE_BASE = 'knowledge_base',
   BID_WORKSPACE = 'bid_workspace',
   AGENT_CONFIG = 'agent_config',

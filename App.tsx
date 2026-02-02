@@ -12,7 +12,8 @@ import {
   Bell,
   UserCircle,
   Settings2,
-  CalendarDays
+  CalendarDays,
+  LayoutTemplate
 } from 'lucide-react';
 import { AppView, BiddingTask, Tender } from './types';
 import DashboardView from './components/DashboardView';
@@ -23,6 +24,7 @@ import KnowledgeBaseView from './components/KnowledgeBaseView';
 import BidWorkspaceView from './components/BidWorkspaceView';
 import AgentConfigView from './components/AgentConfigView';
 import AdminView from './components/AdminView';
+import TemplateConfigView from './components/TemplateConfigView';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
@@ -81,6 +83,7 @@ const App: React.FC = () => {
     { id: AppView.CRAWLER, label: '招标抓取解析', icon: Search },
     { id: AppView.AI_SELECTOR, label: '智能投标筛选', icon: Target },
     { id: AppView.BID_PLAN, label: '投标计划管理', icon: CalendarDays },
+    { id: AppView.TEMPLATE_CONFIG, label: '投标文档模板配置', icon: LayoutTemplate },
     { id: AppView.KNOWLEDGE_BASE, label: '业绩人员库', icon: Database },
     { id: AppView.BID_WORKSPACE, label: '智能文书编撰', icon: FileText },
     { id: AppView.AGENT_CONFIG, label: '智能体参数配置', icon: Settings2 },
@@ -103,6 +106,7 @@ const App: React.FC = () => {
         />
       );
       case AppView.BID_PLAN: return <BiddingPlanView tasks={plannedTasks} onUpdateTask={updateTask} onRemoveTask={removeFromPlan} />;
+      case AppView.TEMPLATE_CONFIG: return <TemplateConfigView />;
       case AppView.KNOWLEDGE_BASE: return <KnowledgeBaseView />;
       case AppView.BID_WORKSPACE: return <BidWorkspaceView />;
       case AppView.AGENT_CONFIG: return <AgentConfigView />;
