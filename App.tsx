@@ -28,8 +28,35 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   
-  // Shared state for bidding tasks across views
-  const [plannedTasks, setPlannedTasks] = useState<BiddingTask[]>([]);
+  // Shared state for bidding tasks across views with initial mock data
+  const [plannedTasks, setPlannedTasks] = useState<BiddingTask[]>([
+    {
+      id: 'plan-001',
+      title: '国网浙江电力2024年第二次配网物资协议库存招标项目',
+      category: '变电类',
+      publishDate: '2024-10-15',
+      deadline: '2024-11-05',
+      status: 'analyzed',
+      budget: '2,450万元',
+      priority: 'high',
+      source: 'crawler',
+      manager: '张经理',
+      assignDate: '2024-10-16'
+    },
+    {
+      id: 'plan-002',
+      title: '智慧变电站在线监测系统研发与部署（AI 深度匹配）',
+      category: '智能设备',
+      publishDate: '2024-10-18',
+      deadline: '2024-11-12',
+      status: 'analyzed',
+      budget: '860万元',
+      priority: 'medium',
+      source: 'ai',
+      manager: '李经理',
+      assignDate: '2024-10-19'
+    }
+  ]);
 
   const addToPlan = (tender: Tender | any, source: 'crawler' | 'ai' = 'crawler') => {
     if (plannedTasks.find(t => t.id === tender.id)) return;
