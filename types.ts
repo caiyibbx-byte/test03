@@ -12,15 +12,29 @@ export enum AppView {
   ADMIN = 'admin'
 }
 
+export interface SubPackage {
+  id: string;
+  name: string;
+  budget?: string;
+  requirement?: string;
+}
+
 export interface Tender {
   id: string;
+  projectId: string; // 采购项目编号
   title: string;
   category: string;
+  type: '服务' | '物资' | '施工'; // 采购类型
   publishDate: string;
-  deadline: string;
-  status: 'new' | 'analyzed' | 'processed';
+  deadline: string; // 文件获取截止
+  openingTime: string; // 开启应答文件时间
+  openingLocation: string; // 开启地点
+  purchaser: string; // 采购人
+  // Fix: Added 'analyzed' and 'new' to status union to match component usage
+  status: '正在采购' | '已结束' | '待发布' | 'analyzed' | 'new';
   summary?: string;
   budget?: string;
+  subPackages?: SubPackage[];
 }
 
 export interface BiddingTask extends Tender {

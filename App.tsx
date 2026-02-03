@@ -52,6 +52,12 @@ const App: React.FC = () => {
   const [plannedTasks, setPlannedTasks] = useState<BiddingTask[]>([
     {
       id: 'plan-001',
+      // Fix: Added missing required properties from Tender interface
+      projectId: 'SGCC-2024-PJ01',
+      type: '物资',
+      openingTime: '2024-11-06 09:00:00',
+      openingLocation: '浙江杭州招标大厅',
+      purchaser: '国网浙江省电力有限公司',
       title: '国网浙江电力2024年第二次配网物资协议库存招标项目',
       category: '变电类',
       publishDate: '2024-10-15',
@@ -65,6 +71,12 @@ const App: React.FC = () => {
     },
     {
       id: 'plan-002',
+      // Fix: Added missing required properties from Tender interface
+      projectId: 'KFFKJ-MATCH-24',
+      type: '服务',
+      openingTime: '2024-11-13 14:00:00',
+      openingLocation: '远程线上开标',
+      purchaser: '国家电网有限公司',
       title: '智慧变电站在线监测系统研发与部署（AI 深度匹配）',
       category: '智能设备',
       publishDate: '2024-10-18',
