@@ -1,22 +1,34 @@
-import React, { useState, useMemo, useEffect } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { 
   Users, Award, FileText, CircleCheck, ChevronRight, BrainCircuit, 
-  RefreshCw, WandSparkles, Download, Save, MessageSquare, ExternalLink, 
-  ChevronDown, ChevronUp, UserPlus, Trash2, AlertCircle, RefreshCcw,
-  Search, X, ListFilter, ArrowUpDown, Plus, Paperclip, TriangleAlert,
-  Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List,
-  Heading1, Heading2, Type, Eraser, Sparkles, FileSearch, Check,
-  Printer, Share2, ShieldCheck, FileType, ZoomIn, ZoomOut, FileCheck
+  RefreshCw, WandSparkles, Download, Save, MessageSquare, 
+  UserPlus, AlertCircle, RefreshCcw,
+  Search, X, ListFilter, Sparkles, Check,
+  Printer, FileType, ShieldCheck, ZoomIn, ZoomOut, FileCheck,
+  LayoutGrid, ArrowLeft, Clock, UserCheck, Activity, Terminal,
+  Plus, MoreVertical, BadgeCheck, Zap, Trash2, Send, Filter,
+  History, UserSearch, Briefcase, Database, Building2, Layers, SearchCode
 } from 'lucide-react';
 
 interface TeamMember {
   id: string;
   name: string;
   role: string;
-  title: string;
-  certs: number;
-  years: number;
-  reason?: string;
+  certs: string[];
+  load: number;
+  match: number;
+  dept?: string;
+  years?: number;
+}
+
+interface ProjectExp {
+  id: string;
+  name: string;
+  client: string;
+  amount: string;
+  date: string;
+  match: number;
 }
 
 interface Manager {
@@ -24,503 +36,659 @@ interface Manager {
   name: string;
   role: string;
   score: number;
+  years: number;
+  majorProject: string;
   tags: string[];
-  certs: string[];
-  resume: string;
 }
 
-interface ExperienceItem {
+interface TaskStatus {
   id: string;
-  projectName: string;
-  participants: string[];
-  type: string;
-  priority: 'Level 1' | 'Level 2' | 'Level 3';
-  evidenceStatus: 'linked' | 'pending';
-  matchedKeywords: string[];
+  name: string;
+  status: 'pending' | 'processing' | 'completed';
+  progress: number;
+  assignee: string;
+  icon: any;
 }
-
-const mockAvailableManagers: Manager[] = [
-  {
-    id: 'm-001',
-    name: '张工',
-    role: '高级项目经理',
-    score: 98,
-    tags: ['变电站扩建经验', '高压资质', '江苏区域专家'],
-    certs: ['一级建造师', '高级工程师', 'PMP'],
-    resume: '深耕电力系统15年，主持过5项国家级重大电网工程，对江苏电网招标文件评分标准有深度研究。'
-  },
-  {
-    id: 'm-002',
-    name: '王大伟',
-    role: '资深工程主管',
-    score: 92,
-    tags: ['通信运维专家', '国网一级专家', 'PMP'],
-    certs: ['高级工程师', '注册安全工程师'],
-    resume: '拥有20年电网通信运维经验，曾多次主导跨省通信主干网改造项目投标工作。'
-  }
-];
-
-const mockExperiences: ExperienceItem[] = [
-  { id: 'exp-1', projectName: '220kV平潮变电站自动化全面改造工程', participants: ['张工', '李晓峰'], type: '变电自动化', priority: 'Level 1', evidenceStatus: 'linked', matchedKeywords: ['220kV', '自动化', '改造'] },
-  { id: 'exp-2', projectName: '国网江苏电力2023年二次系统安全加固项目', participants: ['张工', '王志刚'], type: '电力安全', priority: 'Level 1', evidenceStatus: 'linked', matchedKeywords: ['国网江苏', '安全加固'] },
-  { id: 'exp-3', projectName: '苏州工业园区智慧电网一期示范项目', participants: ['陈思羽'], type: '智能电网', priority: 'Level 2', evidenceStatus: 'linked', matchedKeywords: ['智慧电网'] },
-];
 
 const BidWorkspaceView: React.FC = () => {
-  const [step, setStep] = useState(1);
+  const [phase, setPhase] = useState<'init' | 'hub' | 'task' | 'preview'>('init');
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [managerSelectionOpen, setManagerSelectionOpen] = useState(false);
-  const [managerExpanded, setManagerExpanded] = useState(false);
-  const [manager, setManager] = useState<Manager>(mockAvailableManagers[0]);
-  const [clientType] = useState<'SGCC' | 'CSG'>('SGCC'); 
-
-  // 编辑器状态
-  const [activeOutline, setActiveOutline] = useState('01');
-  const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [pm, setPm] = useState<Manager | null>(null);
   const [zoomLevel, setZoomLevel] = useState(100);
+  
+  // 弹窗与搜索状态
+  const [showTalentPool, setShowTalentPool] = useState(false);
+  const [showExpPool, setShowExpPool] = useState(false);
+  const [talentPoolMode, setTalentPoolMode] = useState<'pm' | 'staff'>('staff');
+  const [talentSearchQuery, setTalentSearchQuery] = useState('');
+  const [expSearchQuery, setExpSearchQuery] = useState('');
 
-  const [fixedMembers, setFixedMembers] = useState<TeamMember[]>([
-    { id: 'm1', name: '李晓峰', role: '技术负责人', title: '高级工程师', certs: 4, years: 12 },
-    { id: 'm2', name: '王志刚', role: '安全主管', title: '注册安全工程师', certs: 3, years: 8 },
+  // 业务选择状态
+  const [selectedStaff, setSelectedStaff] = useState<TeamMember[]>([]);
+  const [selectedExp, setSelectedExp] = useState<ProjectExp[]>([]);
+  const [aiDraft, setAiDraft] = useState('');
+  const [chatInput, setChatInput] = useState('');
+
+  // 任务状态追踪
+  const [tasks, setTasks] = useState<TaskStatus[]>([
+    { id: 'team', name: '团队资质匹配', status: 'pending', progress: 0, assignee: '投标经理 A', icon: Users },
+    { id: 'exp', name: '业绩成果筛选', status: 'pending', progress: 0, assignee: '投标经理 B', icon: Award },
+    { id: 'content', name: '技术方案编撰', status: 'pending', progress: 0, assignee: 'AI 协同助理', icon: FileText },
   ]);
 
-  const [altMembers, setAltMembers] = useState<TeamMember[]>([
-    { id: 'a1', name: '赵强', role: '技术负责人', title: '教授级高工', certs: 6, years: 20, reason: '资质证书更契合项目高要求' },
-  ]);
+  const allTasksCompleted = useMemo(() => tasks.every(t => t.status === 'completed'), [tasks]);
 
-  const [selectedExps, setSelectedExps] = useState<string[]>(mockExperiences.slice(0, 3).map(e => e.id));
-
-  const totalTeamSize = useMemo(() => 1 + fixedMembers.length, [fixedMembers]);
-  const limit = clientType === 'SGCC' ? 15 : 20;
-  const isOverLimit = totalTeamSize > limit;
-
-  // 业绩规则
-  const minExp = 5;
-  const isExpCountValid = selectedExps.length >= minExp;
-
-  const docOutline = [
-    { id: '01', title: '1. 项目背景与需求分析' },
-    { id: '02', title: '2. 拟派团队资质与分工' },
-    { id: '03', title: '3. 企业相关业绩陈述' },
-    { id: '04', title: '4. 核心技术方案 (220kV)' },
-    { id: '05', title: '5. 施工组织与工期保障' },
+  // 模拟数据
+  const mockManagers: Manager[] = [
+    { id: 'm1', name: '张经理', role: '资深项目总监', score: 98, years: 15, majorProject: '国网浙江500kV站改', tags: ['高压资质', '江苏专家', '注册电气'] },
+    { id: 'm2', name: '李经理', role: '技术中心主管', score: 94, years: 10, majorProject: '客服中心云平台二期', tags: ['信通专家', '跨省经验', 'PMP'] },
   ];
 
-  const nextStep = () => {
+  const globalTalentPool: TeamMember[] = [
+    { id: 'gt1', name: '周博', role: '系统架构师', certs: ['高级职称', '博士'], load: 10, match: 85, dept: '省级科研院', years: 12 },
+    { id: 'gt2', name: '吴工', role: '通信专家', certs: ['注册咨询师'], load: 30, match: 80, dept: '信通分公司', years: 8 },
+    { id: 'gt3', name: '郑工', role: '安全主管', certs: ['注册安全工程师'], load: 15, match: 75, dept: '安监部', years: 18 },
+    { id: 'gt4', name: '陈工', role: '项目总监', certs: ['二级建造师', '一级造价师'], load: 40, match: 82, dept: '工程一部', years: 20 },
+    { id: 'gt5', name: '林技术', role: '电气工程师', certs: ['注册电气工程师'], load: 5, match: 94, dept: '设计分院', years: 6 },
+  ];
+
+  const globalExpPool: ProjectExp[] = [
+    { id: 'ge1', name: '2023年南方电网某数字配电网工程', client: '南方电网', amount: '1800万', date: '2024-01', match: 70 },
+    { id: 'ge2', name: '国网北京电力智慧大脑一期', client: '国网北京', amount: '2200万', date: '2023-10', match: 65 },
+    { id: 'ge3', name: '±800kV 换流站精细化巡检项目', client: '国网特高压公司', amount: '950万', date: '2022-11', match: 92 },
+  ];
+
+  // 搜索逻辑
+  const filteredTalent = useMemo(() => {
+    const q = talentSearchQuery.toLowerCase();
+    return globalTalentPool.filter(t => t.name.toLowerCase().includes(q) || (t.dept && t.dept.toLowerCase().includes(q)));
+  }, [talentSearchQuery]);
+
+  const filteredExp = useMemo(() => {
+    const q = expSearchQuery.toLowerCase();
+    return globalExpPool.filter(e => e.name.toLowerCase().includes(q) || e.client.toLowerCase().includes(q));
+  }, [expSearchQuery]);
+
+  const handleStartTask = (taskId: string) => {
+    setActiveTaskId(taskId);
+    setPhase('task');
+    setTasks(prev => prev.map(t => t.id === taskId && t.status === 'pending' ? { ...t, status: 'processing', progress: 10 } : t));
+  };
+
+  const handleCompleteTask = (taskId: string) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completed', progress: 100 } : t));
+    setPhase('hub');
+    setActiveTaskId(null);
+  };
+
+  const handleAggregate = () => {
     setIsGenerating(true);
+    // 模拟编撰生成过程
     setTimeout(() => {
       setIsGenerating(false);
-      setStep(step + 1);
-    }, step === 3 ? 2000 : 1200); // Step 3 到 4 模拟较长的“排版引擎”工作时间
+      setPhase('preview');
+    }, 2000);
   };
 
-  const handleAiPolish = () => {
-    setIsAiProcessing(true);
-    setTimeout(() => setIsAiProcessing(false), 2000);
-  };
-
-  const replaceMember = (alt: TeamMember, index: number) => {
-    const newFixed = [...fixedMembers];
-    const oldMember = newFixed[index];
-    newFixed[index] = { ...alt, reason: undefined };
-    setFixedMembers(newFixed);
-    setAltMembers(prev => [...prev.filter(a => a.id !== alt.id), { ...oldMember, reason: '原匹配人员' }]);
-  };
-
-  const toggleExp = (id: string) => {
-    setSelectedExps(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  const renderTaskDetail = () => {
+    switch (activeTaskId) {
+      case 'team':
+        return (
+          <div className="flex h-full">
+            <div className="flex-1 p-8 overflow-y-auto space-y-6">
+              <div className="flex justify-between items-end mb-4">
+                <h4 className="text-lg font-bold text-slate-800 flex items-center">
+                  <BadgeCheck size={20} className="mr-2 text-blue-600" /> AI 建议匹配人选
+                </h4>
+                <button 
+                  onClick={() => { setTalentPoolMode('staff'); setTalentSearchQuery(''); setShowTalentPool(true); }}
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-blue-600 hover:border-blue-500 transition-all flex items-center"
+                >
+                  <UserPlus size={14} className="mr-2" /> 从全量人才库添加
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                {globalTalentPool.slice(0, 2).map(staff => (
+                  <div key={staff.id} className="bg-white border border-slate-200 p-4 rounded-2xl hover:border-blue-400 transition-all group flex items-center justify-between shadow-sm">
+                    <div className="flex items-center">
+                      <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-slate-500 mr-4 border border-blue-100">
+                        {staff.name[0]}
+                      </div>
+                      <div>
+                        <div className="flex items-center">
+                          <p className="font-bold text-slate-800">{staff.name}</p>
+                          <span className="ml-2 text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold">{staff.role}</span>
+                        </div>
+                        <div className="flex gap-2 mt-1">
+                          {staff.certs.map(c => <span key={c} className="text-[10px] text-slate-400 font-medium">· {c}</span>)}
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedStaff(prev => prev.some(s => s.id === staff.id) ? prev.filter(s => s.id !== staff.id) : [...prev, staff])}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                        selectedStaff.some(s => s.id === staff.id) ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' : 'bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white'
+                      }`}
+                    >
+                      {selectedStaff.some(s => s.id === staff.id) ? <Check size={20} strokeWidth={3} /> : <Plus size={20} strokeWidth={3} />}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="w-80 bg-slate-50 border-l border-slate-200 p-6 flex flex-col shadow-inner">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center">
+                <Users size={14} className="mr-2" /> 已选班子成员 ({selectedStaff.length})
+              </h4>
+              <div className="flex-1 overflow-y-auto space-y-3 text-left">
+                 {selectedStaff.map(s => (
+                   <div key={s.id} className="bg-white p-3 rounded-xl border border-blue-100 flex items-center justify-between shadow-sm">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-xs font-bold mr-3">{s.name[0]}</div>
+                        <span className="text-sm font-medium text-slate-700">{s.name}</span>
+                      </div>
+                      <button onClick={() => setSelectedStaff(prev => prev.filter(x => x.id !== s.id))} className="text-slate-300 hover:text-red-500 transition-colors"><X size={14}/></button>
+                   </div>
+                 ))}
+              </div>
+            </div>
+          </div>
+        );
+      case 'exp':
+        return (
+          <div className="flex h-full">
+            <div className="flex-1 p-8 overflow-y-auto">
+              <div className="flex justify-between items-end mb-6 text-left">
+                <h4 className="text-lg font-bold text-slate-800 flex items-center"><History size={20} className="mr-2 text-blue-600" /> 相关业绩成果自动抓取</h4>
+                <button 
+                  onClick={() => { setExpSearchQuery(''); setShowExpPool(true); }}
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-blue-600 hover:border-blue-500 transition-all flex items-center shadow-sm"
+                >
+                  <Database size={14} className="mr-2" /> 检索全量业绩库
+                </button>
+              </div>
+              <div className="space-y-4">
+                {globalExpPool.slice(0, 2).map(exp => (
+                  <div key={exp.id} className={`p-5 rounded-2xl border-2 transition-all cursor-pointer ${
+                    selectedExp.some(e => e.id === exp.id) ? 'border-blue-500 bg-blue-50/30 shadow-lg' : 'border-slate-100 bg-white hover:border-blue-200'
+                  }`} onClick={() => setSelectedExp(prev => prev.some(e => e.id === exp.id) ? prev.filter(e => e.id !== exp.id) : [...prev, exp])}>
+                    <div className="flex justify-between items-start text-left">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                           <p className="font-bold text-slate-800">{exp.name}</p>
+                           {exp.match > 90 && <span className="flex items-center text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-bold"><Zap size={10} className="mr-1"/> 核心建议</span>}
+                        </div>
+                        <div className="flex space-x-4 mt-2 text-[11px] text-slate-500">
+                          <span className="flex items-center"><Building2 size={12} className="mr-1" /> {exp.client}</span>
+                          <span className="flex items-center"><Layers size={12} className="mr-1" /> {exp.amount}</span>
+                        </div>
+                      </div>
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedExp.some(e => e.id === exp.id) ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-200 text-transparent'}`}><Check size={14} strokeWidth={4} /></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      case 'content':
+        return (
+          <div className="flex h-full bg-slate-50/20">
+            <div className="w-80 bg-slate-900 flex flex-col shrink-0 shadow-2xl z-10">
+               <div className="p-4 border-b border-slate-800 flex items-center">
+                  <BrainCircuit size={18} className="text-blue-400 mr-2" />
+                  <span className="text-sm font-bold text-white tracking-wide uppercase">AI 文书增强助手</span>
+               </div>
+               <div className="flex-1 p-4 overflow-y-auto space-y-4 text-left text-xs">
+                  <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 text-blue-200 leading-relaxed shadow-inner">
+                     <p className="font-bold mb-2 flex items-center text-blue-400"><Sparkles size={14} className="mr-2"/> 智能编排建议</p>
+                     已基于您的负责人【{pm?.name}】及其核心业绩库构建了响应逻辑。建议针对技术评分点，进一步强化“安全围蔽”部分的描述。
+                  </div>
+                  <div className="pt-4 border-t border-slate-800 mt-auto flex flex-col gap-2">
+                    <textarea 
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="要求 AI 针对特定的招标文件章节进行扩充润色..."
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-slate-200 text-[11px] h-32 focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder:text-slate-600 transition-all"
+                    />
+                    <button className="py-2.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all flex items-center justify-center">
+                      <Send size={14} className="mr-2" /> 确认发送
+                    </button>
+                  </div>
+               </div>
+            </div>
+            <div className="flex-1 flex flex-col overflow-hidden">
+               <div className="h-14 border-b border-slate-200 bg-white flex items-center px-8 justify-between shadow-sm">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">技术响应方案编辑器 (Draft)</span>
+                  <button 
+                    onClick={() => {
+                      setIsGenerating(true);
+                      setTimeout(() => {
+                        setAiDraft(`## 第四章：技术响应方案 (适配项目: ${pm?.majorProject})\n\n针对本项目采购人【电网系统】的严格资质要求，我司特别委派了由资深项目经理【${pm?.name}】领衔的专家团队，成员包括【${selectedStaff.map(s => s.name).join('、')}】。全组成员均具备深厚的电网服务背景。\n\n在过往实施的【${selectedExp[0]?.name || '同类历史项目'}】中，我司积累了深厚的技术底蕴，能够完美覆盖本次招标的所有技术细节...`);
+                        setIsGenerating(false);
+                      }, 1500);
+                    }}
+                    className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all"
+                  >
+                    {isGenerating ? <RefreshCw size={14} className="animate-spin mr-2"/> : <WandSparkles size={14} className="mr-2"/>}
+                    AI 动态填充全文草案
+                  </button>
+               </div>
+               <div className="flex-1 p-10 overflow-y-auto bg-slate-200/20 custom-scrollbar-dark scroll-smooth text-left">
+                  <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-sm min-h-[1000px] p-24 font-serif leading-loose whitespace-pre-wrap text-slate-800 border border-slate-100">
+                     {aiDraft || (
+                       <div className="h-full flex flex-col items-center justify-center text-slate-300 py-40">
+                         <FileText size={80} strokeWidth={1} className="mb-6 opacity-40" />
+                         <p className="text-sm font-bold">文稿暂无内容</p>
+                         <p className="text-xs mt-2 text-slate-400 text-center">点击上方按钮，系统将根据当前选定的班子与业绩生成响应方案全文</p>
+                       </div>
+                     )}
+                  </div>
+               </div>
+            </div>
+          </div>
+        );
+      default: return null;
+    }
   };
 
   return (
     <div className="flex flex-col h-[calc(100vh-160px)] space-y-6">
-      {/* 步骤条 */}
-      <div className="flex items-center justify-between bg-white px-8 py-4 rounded-xl border border-slate-200 shadow-sm shrink-0">
-        {[
-          { id: 1, label: '团队匹配' },
-          { id: 2, label: '业绩筛选' },
-          { id: 3, label: '文书编撰' },
-          { id: 4, label: '生成预览' },
-        ].map((s) => (
-          <div key={s.id} className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-              step >= s.id ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
-            }`}>
-              {step > s.id ? <CircleCheck size={18} /> : s.id}
+      {/* 全量人才库模态框 */}
+      {showTalentPool && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-8">
+          <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-md" onClick={() => setShowTalentPool(false)} />
+          <div className="relative w-full max-w-4xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col h-[80vh] animate-in zoom-in-95">
+            <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-2xl font-black flex items-center text-slate-800">
+                <UserSearch size={24} className="mr-4 text-blue-600" /> 全量人才资产库
+              </h3>
+              <button onClick={() => setShowTalentPool(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={24}/></button>
             </div>
-            <span className={`ml-2 text-sm font-medium ${step >= s.id ? 'text-slate-900' : 'text-slate-400'}`}>
-              {s.label}
-            </span>
-            {s.id < 4 && <ChevronRight className="mx-6 text-slate-300" size={16} />}
+            <div className="px-8 py-6 bg-white border-b border-slate-100">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input 
+                  value={talentSearchQuery}
+                  onChange={(e) => setTalentSearchQuery(e.target.value)}
+                  placeholder="搜索姓名、核心资质、部门..." 
+                  className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none" 
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-8 grid grid-cols-2 gap-6 bg-slate-50/20">
+               {filteredTalent.length > 0 ? filteredTalent.map((staff) => (
+                 <div key={staff.id} className="p-6 bg-white border border-slate-100 rounded-3xl hover:border-blue-500 transition-all flex items-center justify-between group">
+                    <div className="flex items-center text-left">
+                      <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center font-bold text-slate-400 text-xl group-hover:bg-blue-600 group-hover:text-white transition-all mr-6">
+                        {staff.name[0]}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 text-lg">{staff.name}</p>
+                        <p className="text-xs text-slate-500 mt-1">{staff.dept} · 从业 {staff.years} 年</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        if (talentPoolMode === 'pm') {
+                          setPm({ id: staff.id, name: staff.name, role: staff.role, score: 90, years: staff.years || 10, majorProject: '全局人才库匹配指派项目', tags: staff.certs });
+                          setPhase('hub');
+                        } else {
+                          if (!selectedStaff.some(s => s.id === staff.id)) setSelectedStaff(prev => [...prev, staff]);
+                        }
+                        setShowTalentPool(false);
+                      }}
+                      className="px-6 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                    >
+                      {talentPoolMode === 'pm' ? '指派为负责人' : '选入项目组'}
+                    </button>
+                 </div>
+               )) : <div className="col-span-2 text-center py-20 text-slate-300">无搜索结果</div>}
+            </div>
           </div>
-        ))}
+        </div>
+      )}
+
+      {/* 历史业绩检索模态框 */}
+      {showExpPool && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-8">
+          <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-md" onClick={() => setShowExpPool(false)} />
+          <div className="relative w-full max-w-4xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col h-[80vh] animate-in zoom-in-95">
+            <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-2xl font-black flex items-center text-slate-800">
+                <Database size={24} className="mr-4 text-emerald-600" /> 企业历史中标业绩库
+              </h3>
+              <button onClick={() => setShowExpPool(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={24}/></button>
+            </div>
+            <div className="p-8 bg-white border-b border-slate-100">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input 
+                  value={expSearchQuery}
+                  onChange={(e) => setExpSearchQuery(e.target.value)}
+                  placeholder="搜索项目名称、业主单位..." 
+                  className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none" 
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-8 space-y-4 bg-slate-50/20">
+               {filteredExp.length > 0 ? filteredExp.map((exp) => (
+                 <div key={exp.id} className="p-6 bg-white border border-slate-100 rounded-3xl hover:border-emerald-500 transition-all flex items-center justify-between group">
+                    <div className="flex-1 pr-10 text-left">
+                      <p className="font-bold text-slate-900 text-lg">{exp.name}</p>
+                      <div className="flex gap-6 mt-3 text-xs text-slate-500 font-medium">
+                        <span className="flex items-center"><Building2 size={14} className="mr-2 text-slate-400" /> {exp.client}</span>
+                        <span className="flex items-center"><Layers size={14} className="mr-2 text-slate-400" /> {exp.amount}</span>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        if (!selectedExp.some(e => e.id === exp.id)) setSelectedExp(prev => [...prev, exp]);
+                        setShowExpPool(false);
+                      }}
+                      className="px-6 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                    >
+                      选入当前投标支撑
+                    </button>
+                 </div>
+               )) : <div className="text-center py-20 text-slate-300">无匹配业绩</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 顶部导航与状态 */}
+      <div className="bg-white px-8 py-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between shrink-0">
+        <div className="flex items-center space-x-4">
+          <div className={`p-2.5 rounded-xl ${phase === 'init' ? 'bg-slate-100 text-slate-500' : 'bg-blue-600 text-white shadow-lg shadow-blue-100'}`}>
+             <LayoutGrid size={22} />
+          </div>
+          <div className="text-left">
+            <h3 className="text-sm font-black text-slate-900 tracking-tight uppercase italic">智能编撰协同流程 (Smart Bidding Hub)</h3>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{
+              phase === 'init' ? '第一步: 指派负责人' : 
+              phase === 'hub' ? '第二步: 模块化并行编撰' : 
+              phase === 'task' ? '第三步: 专家子系统处理' : '第四步: 最终定稿预览'
+            }</p>
+          </div>
+        </div>
+
+        {pm && phase !== 'init' && (
+          <div className="flex items-center bg-blue-50 px-5 py-2.5 rounded-2xl border border-blue-100 animate-in slide-in-from-right shadow-sm">
+            <div className="w-9 h-9 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black text-sm mr-4 shadow-lg shadow-blue-200">
+              {pm.name[0]}
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-black text-slate-900 leading-tight">{pm.name} <span className="text-blue-600 ml-1">PM</span></p>
+              <p className="text-[10px] text-slate-500 font-bold mt-0.5">{pm.role}</p>
+            </div>
+            <div className="w-px h-6 bg-blue-200 mx-5 opacity-50"></div>
+            <button onClick={() => { setPm(null); setPhase('init'); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100" title="更换负责人">
+              <RefreshCcw size={14} />
+            </button>
+          </div>
+        )}
+
+        {phase === 'preview' && (
+          <button onClick={() => setPhase('hub')} className="text-xs font-bold text-slate-400 flex items-center hover:text-blue-600 transition-colors px-4 py-2 hover:bg-slate-50 rounded-xl">
+             <ArrowLeft size={16} className="mr-2" /> 返回协作中心 (Hub)
+          </button>
+        )}
       </div>
 
-      <div className="flex-1 flex space-x-6 overflow-hidden">
-        <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-          
-          {/* 第一阶段：团队匹配 */}
-          {step === 1 && (
-            <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
-               <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-xl font-bold flex items-center text-slate-900">
-                    <BrainCircuit className="text-blue-600 mr-2" size={24} />
-                    第一阶段：团队智能匹配与配置
-                  </h3>
-                  <p className="text-slate-500 text-sm mt-1">AI 已根据技术标要求自动筛选最优资质人员。</p>
-                </div>
-                <div className={`px-4 py-2 rounded-lg border flex items-center space-x-3 ${isOverLimit ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
-                  <span className="text-sm font-bold">{totalTeamSize} / {limit} 人</span>
-                  {isOverLimit && <AlertCircle size={18} className="animate-pulse" />}
-                </div>
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Phase 0: 初始化选择 PM */}
+        {phase === 'init' && (
+          <div className="flex-1 flex flex-col items-center justify-center bg-white rounded-[40px] border-2 border-dashed border-slate-200 animate-in fade-in zoom-in-95 duration-500">
+            <div className="text-center max-w-5xl w-full px-16">
+              <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-[28px] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-blue-500/5 border border-blue-100">
+                <UserCheck size={40} />
               </div>
-              <section className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">拟派项目负责人</h4>
-                  <button onClick={() => setManagerSelectionOpen(true)} className="text-blue-600 text-xs font-bold">更换负责人</button>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mr-4 shadow-lg">{manager.name[0]}</div>
-                  <div>
-                    <h5 className="text-lg font-bold text-slate-900">{manager.name} <span className="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded">匹配度 {manager.score}%</span></h5>
-                    <p className="text-sm text-slate-500">{manager.role} · {manager.certs[0]}</p>
-                  </div>
-                </div>
-              </section>
-              <div className="grid grid-cols-2 gap-8">
-                <div className="space-y-4">
-                   <h4 className="text-xs font-bold text-slate-400 uppercase">固定成员 ({fixedMembers.length})</h4>
-                   {fixedMembers.map(m => (
-                     <div key={m.id} className="p-3 bg-white border border-slate-100 rounded-lg flex justify-between items-center hover:border-blue-200">
-                       <span className="text-sm font-bold">{m.name}</span>
-                       <span className="text-xs text-slate-400">{m.role}</span>
-                     </div>
-                   ))}
-                </div>
-                <div className="space-y-4">
-                   <h4 className="text-xs font-bold text-slate-400 uppercase">AI 优化建议</h4>
-                   {altMembers.map(m => (
-                     <div key={m.id} className="p-3 bg-amber-50 border border-amber-100 rounded-lg group">
-                       <div className="flex justify-between items-center">
-                         <span className="text-sm font-bold text-amber-900">{m.name}</span>
-                         <button onClick={() => replaceMember(m, 0)} className="text-[10px] font-bold text-amber-600 opacity-0 group-hover:opacity-100">立即替换</button>
+              <h3 className="text-3xl font-black text-slate-900 mb-3 tracking-tighter uppercase italic text-center">Assign Project Lead</h3>
+              <p className="text-sm text-slate-500 mb-12 font-medium text-center">请首先指定本项目投标负责人。系统将基于负责人权限及资质匹配程度开启定制化的协同工作空间。</p>
+              
+              <div className="grid grid-cols-2 gap-8 mb-12">
+                {mockManagers.map(m => (
+                  <div 
+                    key={m.id}
+                    className="p-8 bg-white border-2 border-slate-100 rounded-[32px] hover:border-blue-600 hover:shadow-2xl transition-all text-left relative group cursor-pointer"
+                    onClick={() => { setPm(m); setPhase('hub'); }}
+                  >
+                    <div className="absolute top-6 right-6 bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black border border-emerald-100 shadow-sm">AI 核心适配 {m.score}%</div>
+                    <div className="flex items-center mb-6">
+                       <div className="w-16 h-16 bg-slate-900 rounded-[20px] flex items-center justify-center font-black text-white text-2xl shadow-xl group-hover:scale-110 transition-transform duration-500">{m.name[0]}</div>
+                       <div className="ml-5">
+                          <p className="font-black text-slate-900 text-xl tracking-tight">{m.name}</p>
+                          <p className="text-xs text-slate-500 font-bold mt-1 uppercase tracking-wider">{m.role} · {m.years}y Exp</p>
                        </div>
-                       <p className="text-[10px] text-amber-600 mt-1 italic">理由: {m.reason}</p>
-                     </div>
-                   ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 第二阶段：业绩筛选 */}
-          {step === 2 && (
-            <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
-               <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-xl font-bold flex items-center text-slate-900">
-                    <ListFilter className="text-blue-600 mr-2" size={24} />
-                    第二阶段：项目业绩智能筛选
-                  </h3>
-                  <p className="text-slate-500 text-sm mt-1">系统已匹配历史项目，并根据本项目招标文件要求进行自动优先级排序。</p>
-                </div>
-                <div className={`px-4 py-2 rounded-lg border flex items-center space-x-3 ${!isExpCountValid ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
-                   <span className="text-sm font-bold">已选: {selectedExps.length} (要求 ≥ {minExp})</span>
-                   {!isExpCountValid && <TriangleAlert size={18} className="animate-pulse" />}
-                </div>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                <table className="w-full text-left text-sm">
-                   <thead className="bg-slate-50 font-bold text-slate-500 text-[10px] uppercase">
-                     <tr>
-                       <th className="px-6 py-4 w-12 text-center">选择</th>
-                       <th className="px-6 py-4">项目名称</th>
-                       <th className="px-6 py-4">匹配关键字</th>
-                       <th className="px-6 py-4">佐证状态</th>
-                     </tr>
-                   </thead>
-                   <tbody className="divide-y divide-slate-100">
-                     {mockExperiences.map(exp => (
-                        <tr key={exp.id} className={`hover:bg-slate-50 ${selectedExps.includes(exp.id) ? 'bg-blue-50/20' : ''}`}>
-                          <td className="px-6 py-4 text-center">
-                            <input type="checkbox" checked={selectedExps.includes(exp.id)} onChange={() => toggleExp(exp.id)} className="rounded text-blue-600" />
-                          </td>
-                          <td className="px-6 py-4 font-bold text-slate-800">{exp.projectName}</td>
-                          <td className="px-6 py-4">
-                            <div className="flex gap-1">
-                              {exp.matchedKeywords.map(k => <span key={k} className="px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-[9px] font-bold rounded">{k}</span>)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                             <span className={`text-[10px] font-bold flex items-center ${exp.evidenceStatus === 'linked' ? 'text-emerald-600' : 'text-amber-500'}`}>
-                                {exp.evidenceStatus === 'linked' ? <CircleCheck size={12} className="mr-1"/> : <AlertCircle size={12} className="mr-1"/>}
-                                {exp.evidenceStatus === 'linked' ? '已关联' : '待补充'}
-                             </span>
-                          </td>
-                        </tr>
-                     ))}
-                   </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* 第三阶段：文书编撰 */}
-          {step === 3 && (
-            <div className="flex-1 flex overflow-hidden">
-              <div className="w-64 border-r border-slate-100 bg-slate-50/50 flex flex-col shrink-0">
-                <div className="p-4 border-b border-slate-100 bg-white">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center">
-                    <ListFilter size={14} className="mr-2" /> 文档结构大纲
-                  </h4>
-                </div>
-                <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                  {docOutline.map((item) => (
-                    <button key={item.id} onClick={() => setActiveOutline(item.id)} className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all ${activeOutline === item.id ? 'bg-blue-600 text-white shadow-md font-bold' : 'text-slate-600 hover:bg-slate-200'}`}>
-                      {item.title}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex-1 flex flex-col bg-slate-100/50 overflow-hidden relative">
-                <div className="h-12 bg-white border-b border-slate-200 flex items-center px-4 space-x-1 shrink-0 z-10 sticky top-0 shadow-sm">
-                  <div className="flex items-center space-x-0.5 border-r border-slate-200 pr-2 mr-2">
-                    <button className="p-1.5 hover:bg-slate-100 rounded text-slate-600"><Bold size={16}/></button>
-                    <button className="p-1.5 hover:bg-slate-100 rounded text-slate-600"><Italic size={16}/></button>
-                    <button className="p-1.5 hover:bg-slate-100 rounded text-slate-600"><Underline size={16}/></button>
+                    </div>
+                    <div className="space-y-4 text-left">
+                       <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                          <p className="text-[10px] uppercase text-slate-400 font-black mb-1.5 tracking-widest flex items-center"><History size={10} className="mr-1.5"/> 历史同类业绩匹配</p>
+                          <p className="text-xs font-bold text-slate-700 leading-relaxed truncate">{m.majorProject}</p>
+                       </div>
+                    </div>
+                    <div className="mt-8 flex justify-end">
+                       <div className="px-5 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-[11px] font-black opacity-0 group-hover:opacity-100 transition-all flex items-center">
+                         确认并指派负责人 <ChevronRight size={14} className="ml-1" />
+                       </div>
+                    </div>
                   </div>
-                  <button onClick={handleAiPolish} disabled={isAiProcessing} className="flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-200 ml-2 hover:bg-blue-100 transition-colors">
-                     {isAiProcessing ? <RefreshCw size={14} className="mr-1.5 animate-spin" /> : <Sparkles size={14} className="mr-1.5" />}
-                     AI 段落润色
+                ))}
+              </div>
+
+              <div className="flex items-center space-x-6 justify-center">
+                 <div className="h-px bg-slate-100 w-24"></div>
+                 <span className="text-xs text-slate-400 font-black uppercase tracking-widest italic">or</span>
+                 <div className="h-px bg-slate-100 w-24"></div>
+              </div>
+
+              {/* 手动搜索负责人的显性按钮 */}
+              <button 
+                onClick={() => { setTalentPoolMode('pm'); setTalentSearchQuery(''); setShowTalentPool(true); }}
+                className="mt-8 px-12 py-4 bg-slate-900 text-white rounded-[24px] text-sm font-black hover:bg-black transition-all flex items-center mx-auto shadow-xl shadow-slate-200 group active:scale-95"
+              >
+                <UserSearch size={20} className="mr-3 group-hover:scale-110 transition-transform" />
+                从全量人才库手动检索并指派负责人
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Phase 1: 协作大厅 (Hub) */}
+        {phase === 'hub' && (
+          <div className="flex-1 grid grid-cols-3 gap-8 items-center p-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
+             {tasks.map(task => (
+               <div key={task.id} className={`relative bg-white h-96 rounded-[48px] border-2 transition-all flex flex-col items-center justify-center p-12 text-center group ${
+                 task.status === 'completed' ? 'border-emerald-100 shadow-2xl shadow-emerald-500/5' : 
+                 task.status === 'processing' ? 'border-blue-500 shadow-2xl shadow-blue-500/10 scale-105' : 'border-slate-50 shadow-sm hover:border-slate-200'
+               }`}>
+                  <div className={`p-7 rounded-[32px] mb-8 transition-all duration-700 ${
+                    task.status === 'completed' ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-200' : 
+                    task.status === 'processing' ? 'bg-blue-600 text-white shadow-2xl shadow-blue-500/20 rotate-3' : 'bg-slate-50 text-slate-300'
+                  }`}>
+                    <task.icon size={40} />
+                  </div>
+                  <h4 className="text-xl font-black text-slate-900 tracking-tight">{task.name}</h4>
+                  <p className="text-xs text-slate-400 mt-2 mb-8 font-bold uppercase tracking-wider">执行角色: {task.assignee}</p>
+                  
+                  <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-8 shadow-inner">
+                    <div className={`h-full transition-all duration-[1000ms] ease-out ${task.status === 'completed' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${task.progress}%` }}></div>
+                  </div>
+
+                  {task.status === 'completed' ? (
+                    <div className="flex items-center text-emerald-600 text-[11px] font-black tracking-widest uppercase bg-emerald-50 px-5 py-2.5 rounded-2xl animate-in zoom-in-95">
+                       <Check size={18} className="mr-2" strokeWidth={4} /> 子模块数据已就绪
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => handleStartTask(task.id)}
+                      className={`px-10 py-3.5 rounded-2xl text-[11px] font-black tracking-widest uppercase transition-all active:scale-95 ${
+                        task.status === 'processing' ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-slate-900 text-white hover:bg-black shadow-xl shadow-slate-200'
+                      }`}
+                    >
+                      {task.status === 'processing' ? '继续处理任务' : '进入工作站'}
+                    </button>
+                  )}
+               </div>
+             ))}
+
+             {/* 全文预览定稿触发按钮 */}
+             <div className="col-span-3 mt-16 flex justify-center">
+                <div className="bg-slate-900 p-10 rounded-[48px] shadow-[0_40px_80px_-15px_rgba(15,23,42,0.4)] flex items-center justify-between w-full max-w-5xl border border-white/5 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                  <div className="flex items-center space-x-8 text-left relative z-10">
+                    <div className="flex -space-x-4">
+                      {tasks.map(t => (
+                        <div key={t.id} className={`w-14 h-14 rounded-full border-4 border-slate-900 flex items-center justify-center transition-all duration-700 ${t.status === 'completed' ? 'bg-emerald-500 scale-110 z-10 shadow-lg shadow-emerald-500/20' : 'bg-slate-800'}`}>
+                           {t.status === 'completed' ? <Check size={24} strokeWidth={4} className="text-white" /> : <Activity size={24} className="text-slate-600 animate-pulse" />}
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <p className="text-white text-lg font-black tracking-tight uppercase">智能聚合引擎 (Synthesis Engine)</p>
+                      <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">{allTasksCompleted ? '全部编撰任务已锁定 · 可执行预览' : '请先完成上方三个子模块的编撰确认...'}</p>
+                    </div>
+                  </div>
+                  <button 
+                    disabled={!allTasksCompleted || isGenerating}
+                    onClick={handleAggregate}
+                    className={`px-12 py-5 rounded-[24px] font-black text-sm tracking-widest uppercase flex items-center transition-all relative z-10 ${
+                      allTasksCompleted ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-2xl shadow-blue-500/40 cursor-pointer active:scale-95' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-white/5 opacity-50'
+                    }`}
+                  >
+                    {isGenerating ? <RefreshCw className="animate-spin mr-3" /> : <Sparkles className="mr-3" />}
+                    {isGenerating ? '正在执行定稿聚合...' : '生成第四步：最终预览定稿'}
                   </button>
                 </div>
+             </div>
+          </div>
+        )}
 
-                <div className="flex-1 overflow-y-auto p-12 flex justify-center custom-scrollbar">
-                  <div className="w-[820px] bg-white min-h-[1160px] shadow-2xl border border-slate-200 p-20 focus:outline-none relative">
-                    <article className="prose prose-slate max-w-none font-serif text-slate-900 leading-[1.8]">
-                      {activeOutline === '01' && (
-                        <div className="animate-in fade-in duration-500">
-                          <h1 className="text-3xl font-bold text-center mb-12 border-b-2 border-slate-900 pb-6 uppercase">技术响应建议书</h1>
-                          <h2 className="text-xl font-bold mb-4">第一章 项目背景与需求深度分析</h2>
-                          <p className="mb-6 indent-8 text-justify italic border-l-4 border-slate-100 pl-4">针对本项目[SGCC-2024-X]，本公司通过深度研读招标文件，充分认识到XX供电局在变电站自动化升级过程中的核心诉求。本项目承载着区域核心供电负荷，对稳定性有极高要求...</p>
-                        </div>
-                      )}
-                      {activeOutline === '02' && (
-                        <div className="animate-in slide-in-from-left-4 duration-500">
-                          <h2 className="text-xl font-bold mb-4">第二章 拟派团队资质与分工</h2>
-                          <p className="mb-6 indent-8">为确保本项目高质量交付，我司特别组建了以“{manager.name}”为核心的项目组。该团队成员平均电网经验超过8年...</p>
-                        </div>
-                      )}
-                    </article>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 第四阶段：生成预览 (High Fidelity Preview) */}
-          {step === 4 && (
-            <div className="flex-1 flex flex-col bg-slate-900 overflow-hidden relative">
-              {/* 预览控制栏 */}
-              <div className="h-14 bg-slate-800 border-b border-slate-700 flex items-center px-6 justify-between text-white shrink-0">
-                <div className="flex items-center space-x-6">
-                   <div className="flex items-center bg-slate-700 rounded-lg p-1">
-                      <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="p-1.5 hover:bg-slate-600 rounded"><ZoomOut size={16}/></button>
-                      <span className="px-3 text-xs font-bold w-12 text-center">{zoomLevel}%</span>
-                      <button onClick={() => setZoomLevel(Math.min(200, zoomLevel + 10))} className="p-1.5 hover:bg-slate-600 rounded"><ZoomIn size={16}/></button>
+        {/* Phase 2: 具体工作站 (Task View) */}
+        {phase === 'task' && activeTaskId && (
+          <div className="flex-1 flex flex-col bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-2xl animate-in slide-in-from-right-12 duration-500">
+             <div className="px-10 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between z-10 shadow-sm shrink-0">
+                <div className="flex items-center space-x-5 text-left">
+                   <button onClick={() => setPhase('hub')} className="p-3 hover:bg-white hover:shadow-md text-slate-400 hover:text-slate-900 rounded-2xl transition-all border border-transparent hover:border-slate-100"><ArrowLeft size={20}/></button>
+                   <div>
+                     <h3 className="text-xl font-black text-slate-800 tracking-tight uppercase italic">{tasks.find(t => t.id === activeTaskId)?.name}</h3>
+                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">负责人员: {tasks.find(t => t.id === activeTaskId)?.assignee}</p>
                    </div>
-                   <div className="h-4 w-px bg-slate-700"></div>
-                   <span className="text-xs text-slate-400">总计 48 页 · 约 25,430 字</span>
                 </div>
-                <div className="flex items-center space-x-3">
-                   <button className="flex items-center px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-bold rounded-lg border border-slate-600 transition-colors">
-                      <Share2 size={14} className="mr-2" /> 协作分享
-                   </button>
-                   <button className="flex items-center px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-xs font-bold rounded-lg shadow-lg shadow-blue-900/20 transition-all">
-                      <Download size={14} className="mr-2" /> 打包导出文件
+                <button 
+                  onClick={() => handleCompleteTask(activeTaskId)}
+                  className="px-10 py-3.5 bg-emerald-600 text-white rounded-2xl text-[11px] font-black tracking-widest uppercase hover:bg-emerald-700 shadow-xl shadow-emerald-500/20 transition-all flex items-center active:scale-95"
+                >
+                  <Check size={18} className="mr-2" strokeWidth={4} /> 确认模块已就绪
+                </button>
+             </div>
+             <div className="flex-1 overflow-hidden">
+                {renderTaskDetail()}
+             </div>
+          </div>
+        )}
+
+        {/* Phase 3: 全文预览与定稿 (Preview) */}
+        {phase === 'preview' && (
+          <div className="flex-1 flex flex-col bg-slate-950 rounded-[48px] overflow-hidden animate-in zoom-in-95 duration-500 shadow-2xl border border-white/5 relative">
+             <div className="h-20 bg-slate-900/80 backdrop-blur-md border-b border-white/5 flex items-center px-16 justify-between text-white shrink-0 z-10">
+                <div className="flex items-center space-x-12">
+                   <div className="flex items-center bg-slate-800 rounded-2xl p-1.5 border border-white/10 shadow-inner">
+                      <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="p-2.5 hover:bg-slate-700 rounded-xl transition-all text-slate-400 hover:text-white"><ZoomOut size={16}/></button>
+                      <span className="px-5 text-xs font-black w-14 text-center tabular-nums">{zoomLevel}%</span>
+                      <button onClick={() => setZoomLevel(Math.min(200, zoomLevel + 10))} className="p-2.5 hover:bg-slate-700 rounded-xl transition-all text-slate-400 hover:text-white"><ZoomIn size={16}/></button>
+                   </div>
+                   <div className="h-6 w-px bg-white/10"></div>
+                   <div className="flex flex-col text-left">
+                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Engine Audit Status</span>
+                     <span className="text-xs font-bold text-emerald-400 flex items-center tracking-tight">
+                       <ShieldCheck size={14} className="mr-2" /> 深度合规审计及逻辑性校验已通过
+                     </span>
+                   </div>
+                </div>
+                <div className="flex space-x-4">
+                   <button className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-black rounded-xl border border-white/10 transition-all flex items-center"><Printer size={14} className="mr-2" /> 快速打印</button>
+                   <button className="flex items-center px-10 py-3 bg-blue-600 hover:bg-blue-500 text-xs font-black tracking-widest uppercase rounded-2xl transition-all shadow-2xl shadow-blue-500/40 active:scale-95">
+                      <Download size={16} className="mr-3" /> 导出最终定稿 PDF
                    </button>
                 </div>
               </div>
 
               <div className="flex-1 flex overflow-hidden">
-                {/* 页面滚动区 */}
-                <div className="flex-1 overflow-y-auto p-12 space-y-12 flex flex-col items-center custom-scrollbar-dark scroll-smooth bg-slate-900/50">
-                   {/* 第一页 - 封面 */}
-                   <div className="bg-white shadow-2xl origin-top transition-transform duration-300" style={{ width: `${820 * (zoomLevel/100)}px`, minHeight: `${1160 * (zoomLevel/100)}px`, padding: '80px' }}>
-                      <div className="h-full border-[8px] border-double border-slate-800 p-12 flex flex-col items-center text-center">
-                         <div className="w-24 h-24 mb-12 opacity-80 grayscale">
-                            <ShieldCheck size={96} strokeWidth={1} />
-                         </div>
-                         <h1 className="text-5xl font-serif font-black mb-8 tracking-widest text-slate-900">投标文件</h1>
-                         <div className="w-32 h-1 bg-slate-900 mb-12"></div>
-                         <div className="space-y-4 text-xl font-bold text-slate-700 mb-auto">
-                            <p>项目名称：XX 供电局 2024 年变电站综合自动化系统改造</p>
-                            <p>招标编号：SGCC-POWER-2024-001X</p>
-                            <p>标包名称：标包 1 - 自动化设备及集成服务</p>
-                         </div>
-                         <div className="space-y-2 text-lg text-slate-500 font-medium">
-                            <p>投标人：江苏 GridBid 电力技术有限公司 (盖章)</p>
-                            <p>日期：2024 年 10 月 24 日</p>
-                         </div>
-                      </div>
+                <div className="flex-1 overflow-y-auto p-20 flex flex-col items-center custom-scrollbar-dark bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 to-black relative">
+                   <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03] select-none flex flex-wrap gap-20 p-20 justify-center">
+                      {[...Array(20)].map((_, i) => <div key={i} className="-rotate-45 text-4xl font-black text-white whitespace-nowrap">GRIDBID AI - OFFICIAL DRAFT</div>)}
                    </div>
+                   <div className="bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] origin-top transition-transform duration-300 relative border border-slate-100" style={{ width: `${820 * (zoomLevel/100)}px`, minHeight: `${1160 * (zoomLevel/100)}px`, padding: '80px' }}>
+                      <div className="h-full border-[12px] border-double border-slate-900 p-20 flex flex-col items-center text-center">
+                         <div className="w-24 h-1.5 bg-slate-900 mb-10"></div>
+                         <h1 className="text-6xl font-serif font-black mb-12 tracking-[0.25em] text-slate-900 uppercase italic">投标文件</h1>
+                         <div className="w-48 h-2.5 bg-slate-900 mb-24"></div>
+                         
+                         <div className="w-full text-left space-y-16 mt-10">
+                            <section>
+                               <h3 className="text-base font-black border-b-4 border-slate-900 pb-4 mb-8 uppercase tracking-widest text-slate-900 italic">I. 项目负责人及班子构成 (Core Team Assets)</h3>
+                               <div className="grid grid-cols-2 gap-y-4 gap-x-12 text-sm text-left">
+                                  <div className="flex justify-between border-b border-slate-100 pb-3">
+                                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Project Manager</span>
+                                    <span className="font-black text-slate-900">{pm?.name || '未指定'}</span>
+                                  </div>
+                                  {selectedStaff.map(s => (
+                                    <div key={s.id} className="flex justify-between border-b border-slate-100 pb-3">
+                                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">{s.role}</span>
+                                      <span className="font-black text-slate-900">{s.name}</span>
+                                    </div>
+                                  ))}
+                               </div>
+                            </section>
+                            
+                            <section>
+                               <h3 className="text-base font-black border-b-4 border-slate-900 pb-4 mb-8 uppercase tracking-widest text-slate-900 italic">II. 企业关键历史业绩支撑 (Experience Evidence)</h3>
+                               <div className="space-y-6 text-left">
+                                  {selectedExp.length > 0 ? selectedExp.map(e => (
+                                    <div key={e.id} className="text-xs bg-slate-50 p-6 border border-slate-100 rounded-2xl shadow-sm">
+                                      <p className="font-black text-slate-900 text-sm mb-2 uppercase tracking-tight leading-tight">{e.name}</p>
+                                      <p className="text-slate-500 font-bold tracking-widest text-[9px] uppercase">业主单位: {e.client} · 中标金额: {e.amount} · 完成日期: {e.date}</p>
+                                    </div>
+                                  )) : <p className="text-slate-300 italic text-xs">未关联外部支撑业绩，建议在子工作站中添加以增强响应力度。</p>}
+                               </div>
+                            </section>
+                            
+                            <section className="flex-1 text-left">
+                               <h3 className="text-base font-black border-b-4 border-slate-900 pb-4 mb-8 uppercase tracking-widest text-slate-900 italic">III. 全文技术方案逻辑摘要 (Executive Summary)</h3>
+                               <p className="text-xs text-slate-600 font-serif leading-[2.2] italic indent-12 text-justify line-clamp-[12]">
+                                  {aiDraft || "系统正在通过多智能体协作框架 (Multi-Agent framework) 对上述团队背景、资质证书与历史业绩进行全文逻辑编织。全文技术方案预计生成 42,500 字，涵盖 24 个深度响应章节。当前预览状态仅展示由负责人指派后生成的逻辑核心摘要..."}
+                               </p>
+                            </section>
+                         </div>
 
-                   {/* 第二页 - 正文 */}
-                   <div className="bg-white shadow-2xl relative" style={{ width: `${820 * (zoomLevel/100)}px`, minHeight: `${1160 * (zoomLevel/100)}px`, padding: '80px' }}>
-                      <div className="absolute top-10 right-10 text-[10px] text-slate-300 uppercase tracking-widest">Confidential · GridBid AI</div>
-                      <article className="prose prose-slate max-w-none font-serif text-slate-900 leading-[1.8]">
-                        <h2 className="text-xl font-bold mb-8 text-center border-b pb-4">第一章 项目背景与需求深度分析</h2>
-                        <p className="mb-6 indent-8">针对本项目，我司通过深度研读招标文件，充分认识到XX供电局在变电站自动化升级中的核心诉求。本项目承载着区域核心供电负荷，对稳定性有极高要求。在技术架构设计上，我们采用了符合 DL/T 860 标准的全建模体系...</p>
-                        <p className="mb-6 indent-8">在后续的施工组织中，我司承诺将投入具备丰富改造经验的团队，确保在停电窗口期内保质保量完成任务...</p>
-                      </article>
-                      {/* 模拟电子签章 */}
-                      <div className="absolute bottom-32 right-32 select-none pointer-events-none opacity-80 group">
-                         <div className="relative w-40 h-40 flex items-center justify-center border-4 border-red-500 rounded-full text-red-500 font-bold text-sm transform -rotate-12 border-dashed">
-                            <div className="text-center">
-                               <p className="mb-1">江苏 GridBid</p>
-                               <p className="mb-1 text-xs">电子投标文件专用</p>
-                               <p className="text-[8px]">VALIDATED BY AI-CORE</p>
+                         <div className="mt-auto pt-24 w-full flex justify-between items-end border-t border-slate-100">
+                            <div className="text-left">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Authorized Lead Signature</p>
+                                <p className="text-2xl font-black text-slate-900 tracking-tighter uppercase">{pm?.name || 'TBD'}</p>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase mt-1.5 tracking-widest">{new Date().toLocaleDateString('zh-CN', {year:'numeric', month:'long', day:'numeric'})}</p>
+                            </div>
+                            <div className="flex flex-col items-end">
+                                <div className="p-5 bg-slate-900 text-white rounded-[24px] mb-5 shadow-2xl rotate-3">
+                                  <ShieldCheck size={40} />
+                                </div>
+                                <span className="text-[9px] font-mono font-black text-slate-400 uppercase tracking-[0.3em] opacity-60">Verified Hash: {Math.random().toString(36).substring(2, 14).toUpperCase()}</span>
                             </div>
                          </div>
-                         <div className="absolute -bottom-4 -right-4 w-20 h-10 border-2 border-red-600 bg-red-50/10 flex items-center justify-center text-red-600 font-bold text-[10px] rotate-6">
-                            法人: 张XX
-                         </div>
-                      </div>
-                   </div>
-                </div>
-
-                {/* 预览侧边报告栏 */}
-                <div className="w-80 border-l border-slate-700 bg-slate-800 flex flex-col shrink-0">
-                   <div className="p-4 border-b border-slate-700 bg-slate-800/50">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center">
-                        <FileCheck size={14} className="mr-2" /> AI 文书终审报告
-                      </h4>
-                   </div>
-                   <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar-dark">
-                      <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
-                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-slate-400 text-xs font-bold uppercase">技术得分预测</span>
-                            <span className="text-blue-400 text-lg font-bold">96.5</span>
-                         </div>
-                         <div className="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-blue-500 h-full w-[96.5%]"></div>
-                         </div>
-                         <p className="text-[10px] text-slate-500 mt-2">基于同类项目 500+ 中标样本比对计算</p>
-                      </div>
-
-                      <div className="space-y-4">
-                         <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">扫描详情</h5>
-                         {[
-                           { label: '严禁词命中', value: '0个', status: 'success' },
-                           { label: '必要项覆盖', value: '100%', status: 'success' },
-                           { label: '图表规范性', value: '优秀', status: 'success' },
-                           { label: '引用标准效力', value: '现行有效', status: 'success' },
-                         ].map((item, i) => (
-                           <div key={i} className="flex justify-between items-center bg-slate-700/30 p-2 rounded">
-                              <span className="text-xs text-slate-300">{item.label}</span>
-                              <span className={`text-xs font-bold ${item.status === 'success' ? 'text-emerald-400' : 'text-amber-400'}`}>{item.value}</span>
-                           </div>
-                         ))}
-                      </div>
-
-                      <div className="p-4 bg-blue-900/20 rounded-xl border border-blue-900/50">
-                         <div className="flex items-start">
-                            <TriangleAlert size={14} className="text-blue-400 mt-0.5 mr-2" />
-                            <p className="text-[10px] text-blue-300 leading-relaxed">
-                               检测到电子签章有效期覆盖本项目开标日。投标文件已根据《电力行业电子招投标规范》进行脱敏加密。
-                            </p>
-                         </div>
                       </div>
                    </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* 底部导航区 */}
-          <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
-            <button onClick={() => setStep(Math.max(1, step - 1))} className="px-6 py-2 text-slate-600 font-medium hover:text-slate-900">上一步</button>
-            <div className="flex space-x-3">
-              {step === 4 ? (
-                <>
-                  <button className="px-6 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold flex items-center border border-slate-200 hover:bg-white">
-                    <Printer size={18} className="mr-2" /> 打印文档
-                  </button>
-                  <button className="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold flex items-center shadow-lg shadow-blue-200">
-                    <FileType size={18} className="mr-2" /> 正式发布归档
-                  </button>
-                </>
-              ) : (
-                <>
-                  {step === 3 && <button className="px-6 py-2 bg-slate-800 text-white rounded-lg font-bold flex items-center shadow-md"><Save size={18} className="mr-2" /> 保存草稿</button>}
-                  <button 
-                    onClick={nextStep}
-                    className={`px-8 py-2 rounded-lg font-bold flex items-center shadow-md transition-all ${
-                      (!isExpCountValid && step === 2) ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700'
-                    } text-white`}
-                  >
-                    {isGenerating ? <RefreshCw className="animate-spin mr-2" size={18} /> : (step === 3 ? '生成并查看预览' : '确认并下一步')}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 侧边智能助手 (Step 4 下自动收缩或显示汇总) */}
-        {step < 4 && (
-          <div className="w-80 bg-slate-900 text-white rounded-xl shadow-xl flex flex-col shrink-0">
-            <div className="p-4 border-b border-slate-800 flex items-center">
-              <WandSparkles size={18} className="text-blue-400 mr-2" />
-              <span className="font-bold">智能投标助手</span>
-            </div>
-            <div className="flex-1 p-4 space-y-6">
-              <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                <p className="text-slate-400 text-xs font-bold mb-3 uppercase tracking-widest">章节质量建议</p>
-                <ul className="space-y-3 text-xs text-slate-300">
-                  <li className="flex items-start"><div className="w-1 h-1 bg-blue-400 rounded-full mt-1.5 mr-2"></div>当前正在编写“项目背景”，AI 已检索到 3 个同类成功案例。</li>
-                  <li className="flex items-start"><div className="w-1 h-1 bg-emerald-400 rounded-full mt-1.5 mr-2"></div>团队成员资质已通过自动核验。</li>
-                </ul>
-              </div>
-            </div>
-            <div className="p-4 border-t border-slate-800 bg-slate-900/80">
-              <div className="relative">
-                <input type="text" placeholder="向助手提问..." className="w-full bg-slate-800 rounded-lg px-3 py-2 text-[10px] text-white focus:ring-1 focus:ring-blue-500 outline-none" />
-                <button className="absolute right-2 top-1.5 text-blue-400 hover:text-blue-300 transition-colors"><MessageSquare size={14} /></button>
-              </div>
-            </div>
           </div>
         )}
       </div>
 
-      {/* 负责人选择模态框 */}
-      {managerSelectionOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl animate-in zoom-in-95">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold">选择拟派负责人</h3>
-              <X className="cursor-pointer text-slate-400" onClick={() => setManagerSelectionOpen(false)} />
-            </div>
-            <div className="space-y-4">
-              {mockAvailableManagers.map(m => (
-                <div key={m.id} onClick={() => {setManager(m); setManagerSelectionOpen(false);}} className="p-4 border border-slate-100 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50/30 transition-all">
-                  <p className="font-bold text-slate-900">{m.name}</p>
-                  <p className="text-xs text-slate-500">{m.role} · {m.tags.join('/')}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar-dark::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar-dark::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar-dark::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar-dark::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar-dark::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .custom-scrollbar-dark::-webkit-scrollbar-thumb:hover { background: #475569; }
       `}</style>
     </div>
   );
