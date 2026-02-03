@@ -1,7 +1,20 @@
 
-import React, { useState } from 'react';
-import { Download, RefreshCcw, Eye, FileText, CircleCheckBig, AlertCircle, PlusCircle, CircleCheck } from 'lucide-react';
-import { Tender } from '../types';
+import React, { useState, useEffect } from 'react';
+import { 
+  Download, 
+  RefreshCcw, 
+  Eye, 
+  FileText, 
+  CircleCheckBig, 
+  AlertCircle, 
+  PlusCircle, 
+  CircleCheck,
+  TriangleAlert,
+  X,
+  Search as SearchIcon,
+  WifiOff
+} from 'lucide-react';
+import { Tender, SystemLog } from '../types';
 
 const mockTenders: Tender[] = [
   { id: '1', title: '国家电网2024年变电站自动化设备第一次招标', category: '变电类', publishDate: '2024-10-20', deadline: '2024-11-05', status: 'analyzed', budget: '1,200万元' },
@@ -13,32 +26,132 @@ const mockTenders: Tender[] = [
 interface CrawlerViewProps {
   plannedIds: string[];
   onTogglePlan: (tender: Tender) => void;
+  onAddLog: (log: Omit<SystemLog, 'id'>) => void;
 }
 
-const CrawlerView: React.FC<CrawlerViewProps> = ({ plannedIds, onTogglePlan }) => {
+const CrawlerView: React.FC<CrawlerViewProps> = ({ plannedIds, onTogglePlan, onAddLog }) => {
   const [isCrawling, setIsCrawling] = useState(false);
+  const [crawlError, setCrawlError] = useState<{ message: string; code: string } | null>(null);
+  const [showToast, setShowToast] = useState(false);
 
-  const startCrawl = () => {
+  const startCrawl = (forceError = false) => {
     setIsCrawling(true);
-    setTimeout(() => setIsCrawling(false), 2000);
+    setCrawlError(null);
+    
+    setTimeout(() => {
+      const shouldFail = forceError || Math.random() > 0.4; // 增加失败几率以便测试
+      
+      if (shouldFail) {
+        const error = { message: "南网公共服务平台接口响应超时 (Timeout 5000ms)", code: "ERR_TIMEOUT_002" };
+        setCrawlError(error);
+        setShowToast(true);
+        
+        // 关键：向全局日志系统写入错误
+        onAddLog({
+          timestamp: new Date().toLocaleString(),
+          level: 'error',
+          category: 'crawler',
+          operator: 'System_Scheduler',
+          action: '同步失败',
+          details: `数据源同步中断: 南方电网电子商务平台 (${error.code}) - 自动触发报警`,
+          ip: '10.0.8.24'
+        });
+      } else {
+        setCrawlError(null);
+        // 成功时也可以记录日志
+        onAddLog({
+          timestamp: new Date().toLocaleString(),
+          level: 'info',
+          category: 'crawler',
+          operator: 'System_Scheduler',
+          action: '同步成功',
+          details: '成功同步 4 条最新的招标信息',
+          ip: '10.0.8.24'
+        });
+      }
+      setIsCrawling(false);
+    }, 1500);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* 失败提醒 Toast */}
+      {showToast && crawlError && (
+        <div className="fixed top-20 right-8 z-[100] animate-in slide-in-from-right-8 duration-300">
+          <div className="bg-white border-l-4 border-red-500 shadow-2xl rounded-xl p-4 flex items-start space-x-4 min-w-[360px]">
+            <div className="p-2 bg-red-100 text-red-600 rounded-lg shrink-0">
+              <TriangleAlert size={20} />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-bold text-slate-900">抓取同步异常</h4>
+              <p className="text-xs text-slate-500 mt-1">{crawlError.message}</p>
+              <div className="flex space-x-3 mt-3">
+                <button 
+                  onClick={() => startCrawl(false)}
+                  className="text-[10px] font-bold text-red-600 hover:text-red-700 underline"
+                >
+                  立即重试
+                </button>
+                <button 
+                  onClick={() => setShowToast(false)}
+                  className="text-[10px] font-bold text-slate-400"
+                >
+                  忽略
+                </button>
+              </div>
+            </div>
+            <button onClick={() => setShowToast(false)} className="text-slate-300 hover:text-slate-500 transition-colors">
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">招标抓取与解析</h2>
           <p className="text-slate-500">自动同步国网、南网等门户招标信息，深度解析招标文件。</p>
         </div>
-        <button 
-          onClick={startCrawl}
-          disabled={isCrawling}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-all disabled:opacity-50"
-        >
-          <RefreshCcw size={18} className={`mr-2 ${isCrawling ? 'animate-spin' : ''}`} />
-          {isCrawling ? '正在抓取同步...' : '立即同步数据'}
-        </button>
+        <div className="flex space-x-3">
+          {crawlError && (
+             <div className="flex items-center px-3 py-1 bg-red-50 border border-red-100 text-red-600 rounded-lg text-xs animate-pulse">
+                <WifiOff size={14} className="mr-2" />
+                最近同步失败: {crawlError.code}
+             </div>
+          )}
+          <button 
+            onClick={() => startCrawl()}
+            disabled={isCrawling}
+            className={`${
+              crawlError ? 'bg-red-600 hover:bg-red-700 shadow-red-100' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-100'
+            } text-white px-5 py-2.5 rounded-xl flex items-center transition-all disabled:opacity-50 shadow-lg font-bold text-sm`}
+          >
+            <RefreshCcw size={18} className={`mr-2 ${isCrawling ? 'animate-spin' : ''}`} />
+            {isCrawling ? '正在抓取同步...' : crawlError ? '重新尝试同步' : '立即同步数据'}
+          </button>
+        </div>
       </div>
+
+      {/* 状态异常看板 (仅在有错误时显示) */}
+      {crawlError && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center">
+               <AlertCircle size={24} />
+            </div>
+            <div>
+              <h3 className="font-bold text-red-900">数据源接入中断</h3>
+              <p className="text-sm text-red-700/80">检测到与“南方电网电子商务平台”的通信链路异常，系统已自动计入系统日志并触发二级重试机制。</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => startCrawl(false)}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors shadow-md shadow-red-200"
+          >
+            诊断连接并重试
+          </button>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center space-x-4">
@@ -112,28 +225,10 @@ const CrawlerView: React.FC<CrawlerViewProps> = ({ plannedIds, onTogglePlan }) =
                               ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' 
                               : 'bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-600 hover:text-white hover:border-blue-600'
                           }`}
-                          title={isInPlan ? "已加入计划" : "加入投标计划"}
                         >
-                          {isInPlan ? (
-                            <>
-                              <CircleCheck size={14} className="mr-1.5" />
-                              已入计划
-                            </>
-                          ) : (
-                            <>
-                              <PlusCircle size={14} className="mr-1.5" />
-                              加入投标计划
-                            </>
-                          )}
+                          {isInPlan ? <CircleCheck size={14} className="mr-1.5" /> : <PlusCircle size={14} className="mr-1.5" />}
+                          {isInPlan ? '已入计划' : '加入投标计划'}
                         </button>
-                        <div className="flex space-x-1">
-                          <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="解析报告">
-                            <Eye size={18} />
-                          </button>
-                          <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="下载附件">
-                            <Download size={18} />
-                          </button>
-                        </div>
                       </div>
                     </td>
                   </tr>
@@ -146,9 +241,5 @@ const CrawlerView: React.FC<CrawlerViewProps> = ({ plannedIds, onTogglePlan }) =
     </div>
   );
 };
-
-const SearchIcon = ({ className, size }: { className?: string, size?: number }) => (
-  <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-);
 
 export default CrawlerView;

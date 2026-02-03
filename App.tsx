@@ -16,7 +16,7 @@ import {
   LayoutTemplate,
   Activity
 } from 'lucide-react';
-import { AppView, BiddingTask, Tender } from './types';
+import { AppView, BiddingTask, Tender, SystemLog } from './types';
 import DashboardView from './components/DashboardView';
 import CrawlerView from './components/CrawlerView';
 import AISelectorView from './components/AISelectorView';
@@ -32,7 +32,23 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   
-  // Shared state for bidding tasks across views with initial mock data
+  // Shared state for logs
+  const [logs, setLogs] = useState<SystemLog[]>([
+    { id: 'L1', timestamp: '2024-10-24 14:35:21', level: 'info', category: 'ai', operator: 'Agent_v2.4', action: '模板生成', details: '成功生成项目 [SGCC-2024-X] 的技术标模板', ip: '10.0.4.12' },
+    { id: 'L2', timestamp: '2024-10-24 14:32:05', level: 'warning', category: 'crawler', operator: 'System_Scheduler', action: '抓取延迟', details: '南网招标平台响应缓慢，重试第 2 次成功', ip: '127.0.0.1' },
+    { id: 'L3', timestamp: '2024-10-24 14:30:10', level: 'info', category: 'user', operator: '张工', action: '登录成功', details: '用户通过 OA 认证登录系统', ip: '192.168.1.105' },
+    { id: 'L4', timestamp: '2024-10-24 14:28:45', level: 'error', category: 'system', operator: 'DB_Master', action: '连接中断', details: '尝试连接业绩数据库失败，自动切换至备份节点', ip: '10.0.2.1' },
+  ]);
+
+  const addLog = (logData: Omit<SystemLog, 'id'>) => {
+    const newLog: SystemLog = {
+      ...logData,
+      id: `L-${Date.now()}`
+    };
+    setLogs(prev => [newLog, ...prev]);
+  };
+
+  // Shared state for bidding tasks
   const [plannedTasks, setPlannedTasks] = useState<BiddingTask[]>([
     {
       id: 'plan-001',
@@ -64,11 +80,7 @@ const App: React.FC = () => {
 
   const addToPlan = (tender: Tender | any, source: 'crawler' | 'ai' = 'crawler') => {
     if (plannedTasks.find(t => t.id === tender.id)) return;
-    const newTask: BiddingTask = {
-      ...tender,
-      priority: 'medium',
-      source,
-    };
+    const newTask: BiddingTask = { ...tender, priority: 'medium', source };
     setPlannedTasks([...plannedTasks, newTask]);
   };
 
@@ -99,7 +111,8 @@ const App: React.FC = () => {
       case AppView.CRAWLER: return (
         <CrawlerView 
           plannedIds={plannedTasks.map(t => t.id)} 
-          onTogglePlan={(t) => plannedTasks.find(p => p.id === t.id) ? removeFromPlan(t.id) : addToPlan(t, 'crawler')} 
+          onTogglePlan={(t) => plannedTasks.find(p => p.id === t.id) ? removeFromPlan(t.id) : addToPlan(t, 'crawler')}
+          onAddLog={addLog}
         />
       );
       case AppView.AI_SELECTOR: return (
@@ -112,7 +125,7 @@ const App: React.FC = () => {
       case AppView.TEMPLATE_CONFIG: return <TemplateConfigView />;
       case AppView.KNOWLEDGE_BASE: return <KnowledgeBaseView />;
       case AppView.BID_WORKSPACE: return <BidWorkspaceView />;
-      case AppView.LOG_MANAGEMENT: return <LogManagementView />;
+      case AppView.LOG_MANAGEMENT: return <LogManagementView logs={logs} onClearLogs={() => setLogs([])} />;
       case AppView.AGENT_CONFIG: return <AgentConfigView />;
       case AppView.ADMIN: return <AdminView />;
       default: return <DashboardView />;

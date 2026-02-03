@@ -30,6 +30,17 @@ export interface BiddingTask extends Tender {
   source?: 'crawler' | 'ai';
 }
 
+export interface SystemLog {
+  id: string;
+  timestamp: string;
+  level: 'info' | 'warning' | 'error';
+  category: 'system' | 'user' | 'ai' | 'crawler';
+  operator: string;
+  action: string;
+  details: string;
+  ip?: string;
+}
+
 export interface ProjectExperience {
   id: string;
   projectName: string;
