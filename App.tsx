@@ -18,7 +18,9 @@ import {
   Layers,
   ChevronDown,
   LogOut,
-  MonitorPlay
+  MonitorPlay,
+  Briefcase,
+  Users
 } from 'lucide-react';
 import { AppView, BiddingTask, Tender, SystemLog, StaffUser } from './types';
 import DashboardView from './components/DashboardView';
@@ -26,6 +28,7 @@ import CrawlerView from './components/CrawlerView';
 import AISelectorView from './components/AISelectorView';
 import BiddingPlanView from './components/BiddingPlanView';
 import KnowledgeBaseView from './components/KnowledgeBaseView';
+import PersonnelBaseView from './components/PersonnelBaseView';
 import BidWorkspaceView from './components/BidWorkspaceView';
 import AgentConfigView from './components/AgentConfigView';
 import AdminView from './components/AdminView';
@@ -52,7 +55,7 @@ const App: React.FC = () => {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     '智慧驾驶舱': true,
     '投标全生命周期': true,
-    '数字资产中心': false,
+    '核心业务数据库': true,
     '系统运维与配置': false
   });
 
@@ -93,10 +96,11 @@ const App: React.FC = () => {
       ]
     },
     {
-      title: '数字资产中心',
+      title: '核心业务数据库',
       icon: Database,
       items: [
-        { id: AppView.KNOWLEDGE_BASE, label: '业绩人员库', icon: Database },
+        { id: AppView.PROJECT_BASE, label: '项目业绩库', icon: Briefcase },
+        { id: AppView.STAFF_BASE, label: '人员资质库', icon: Users },
         { id: AppView.TEMPLATE_CONFIG, label: '投标文档模板配置', icon: LayoutTemplate },
       ]
     },
@@ -192,7 +196,8 @@ const App: React.FC = () => {
       case AppView.AI_SELECTOR: return <AISelectorView plannedIds={plannedTasks.map(t => t.id)} onTogglePlan={(t) => addToPlan(t, 'ai')} />;
       case AppView.BID_PLAN: return <BiddingPlanView tasks={plannedTasks} onUpdateTask={updateTask} onRemoveTask={removeFromPlan} onEnterWorkspace={handleEnterWorkspace} />;
       case AppView.TEMPLATE_CONFIG: return <TemplateConfigView />;
-      case AppView.KNOWLEDGE_BASE: return <KnowledgeBaseView />;
+      case AppView.PROJECT_BASE: return <KnowledgeBaseView mode="projects" />;
+      case AppView.STAFF_BASE: return <PersonnelBaseView />;
       case AppView.BID_WORKSPACE: return <BidWorkspaceView currentTask={selectedTask} />;
       case AppView.LOG_MANAGEMENT: return <LogManagementView logs={logs} onClearLogs={() => setLogs([])} />;
       case AppView.AGENT_CONFIG: return <AgentConfigView />;
@@ -213,8 +218,8 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
-      <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 ease-in-out bg-slate-900 text-white flex flex-col shadow-2xl z-50`}>
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-left">
+      <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 ease-in-out bg-slate-900 text-white flex flex-col shadow-2xl z-50 shrink-0`}>
         <div className="p-6 flex items-center justify-between border-b border-white/5 shrink-0">
           {isSidebarOpen && <h1 className="text-xl font-bold tracking-tight text-blue-400">GridBid AI</h1>}
           <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white">
@@ -274,7 +279,7 @@ const App: React.FC = () => {
                 <UserCircle size={22} />
               </div>
               {isSidebarOpen && (
-                <div className="ml-3 overflow-hidden">
+                <div className="ml-3 overflow-hidden text-left">
                   <p className="text-xs font-bold text-white truncate">{currentUser?.name}</p>
                   <p className="text-[10px] text-slate-500 uppercase font-black truncate tracking-tighter">ID: {currentUser?.id}</p>
                 </div>

@@ -35,8 +35,8 @@ interface ManagerViewProps {
 // 1. 根据需求重定义 6 个核心业务阶段
 const STAGES = [
   { key: 'leader_assigned', label: '负责人指定', icon: UserCheck, color: 'text-blue-500' },
-  { key: 'team_matched', label: '团队匹配', icon: Users2, color: 'text-indigo-500' },
-  { key: 'experience_linked', label: '业绩匹配', icon: DatabaseZap, color: 'text-emerald-500' },
+  { key: 'team_matched', label: '成员拟定', icon: Users2, color: 'text-indigo-500' },
+  { key: 'experience_linked', label: '业绩遴选', icon: DatabaseZap, color: 'text-emerald-500' },
   { key: 'tech_drafting', label: '文档撰写', icon: FileEdit, color: 'text-amber-500' },
   { key: 'compliance_review', label: '合规内审', icon: ShieldCheck, color: 'text-purple-500' },
   { key: 'bid_submitted', label: '完成投标', icon: Send, color: 'text-slate-900' },

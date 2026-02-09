@@ -74,8 +74,8 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
 
   // 5. 任务进度状态
   const [tasks, setTasks] = useState<TaskStatus[]>([
-    { id: 'team', name: '团队资质匹配', status: 'pending', progress: 0, icon: Users, color: 'blue' },
-    { id: 'exp', name: '业绩成果筛选', status: 'pending', progress: 0, icon: Award, color: 'emerald' },
+    { id: 'team', name: '成员拟定', status: 'pending', progress: 0, icon: Users, color: 'blue' },
+    { id: 'exp', name: '业绩遴选', status: 'pending', progress: 0, icon: Award, color: 'emerald' },
     { id: 'content', name: '技术方案编撰', status: 'pending', progress: 0, icon: FileText, color: 'purple' },
   ]);
 
@@ -88,12 +88,13 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
     { id: 's5', name: '孙工', role: '通信专家', years: 10, majorProject: '5G电力专用切片', tags: ['5G', '通信'], score: 91 },
   ];
 
+  /* Updated allExpPool to match ProjectExperience interface and added missing properties clientAddress, quality */
   const allExpPool: ProjectExperience[] = [
-    { id: 'e1', projectName: '2023年国网江苏500kV配网升级', client: '国网江苏', completionDate: '2023-12', scale: '1200万', description: '全生命周期运维...', tags: ['变电', '核心业绩'] },
-    { id: 'e2', projectName: '杭州亚运会供电保障工程', client: '国网浙江', completionDate: '2022-09', scale: '2500万', description: '零闪络供电保障...', tags: ['保电', '重大项目'] },
-    { id: 'e3', projectName: '苏州工业园智能配网试点', client: '国网江苏', completionDate: '2024-01', scale: '800万', description: '数字孪生应用...', tags: ['智能配网', '新技术'] },
-    { id: 'e4', projectName: '四川超高压巡检服务', client: '国网四川', completionDate: '2024-03', scale: '3200万', description: '无人机自动化巡检...', tags: ['无人机', '超高压'] },
-    { id: 'e5', projectName: '青海绿电交易平台开发', client: '国网青海', completionDate: '2023-08', scale: '500万', description: '区块链技术应用...', tags: ['软件开发', '区块链'] },
+    { id: 'e1', projectName: '2023年国网江苏500kV配网升级', clientName: '国网江苏', clientAddress: '江苏省南京市鼓楼区', quality: '优', endDate: '2023-12', amount: '1200万', content: '全生命周期运维...', keywords: ['变电', '核心业绩'], contractYear: '2023', index: 1, projectType: '变电', extendedKeywords: [], signingDate: '2023-01', contact: '', phone: '', remarks: '', location: '', contractStatus: '', leader: '', leaderExperience: '', members: '', memberExperience: '' },
+    { id: 'e2', projectName: '杭州亚运会供电保障工程', clientName: '国网浙江', clientAddress: '浙江省杭州市西湖区', quality: '优', endDate: '2022-09', amount: '2500万', content: '零闪络供电保障...', keywords: ['保电', '重大项目'], contractYear: '2022', index: 2, projectType: '保电', extendedKeywords: [], signingDate: '2022-01', contact: '', phone: '', remarks: '', location: '', contractStatus: '', leader: '', leaderExperience: '', members: '', memberExperience: '' },
+    { id: 'e3', projectName: '苏州工业园智能配网试点', clientName: '国网江苏', clientAddress: '江苏省苏州市园区', quality: '优', endDate: '2024-01', amount: '800万', content: '数字孪生应用...', keywords: ['智能配网', '新技术'], contractYear: '2024', index: 3, projectType: '智能配网', extendedKeywords: [], signingDate: '2024-01', contact: '', phone: '', remarks: '', location: '', contractStatus: '', leader: '', leaderExperience: '', members: '', memberExperience: '' },
+    { id: 'e4', projectName: '四川超高压巡检服务', clientName: '国网四川', clientAddress: '四川省成都市高新区', quality: '优', endDate: '2024-03', amount: '3200万', content: '无人机自动化巡检...', keywords: ['无人机', '超高压'], contractYear: '2024', index: 4, projectType: '巡检', extendedKeywords: [], signingDate: '2024-01', contact: '', phone: '', remarks: '', location: '', contractStatus: '', leader: '', leaderExperience: '', members: '', memberExperience: '' },
+    { id: 'e5', projectName: '青海绿电交易平台开发', clientName: '国网青海', clientAddress: '青海省西宁市城中区', quality: '优', endDate: '2023-08', amount: '500万', content: '区块链技术应用...', keywords: ['软件开发', '区块链'], contractYear: '2023', index: 5, projectType: '软件', extendedKeywords: [], signingDate: '2023-01', contact: '', phone: '', remarks: '', location: '', contractStatus: '', leader: '', leaderExperience: '', members: '', memberExperience: '' },
   ];
 
   const mockTemplates = [
@@ -110,7 +111,8 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
 
   const filteredExp = useMemo(() => {
     const q = expSearchQuery.toLowerCase();
-    return allExpPool.filter(e => e.projectName.toLowerCase().includes(q) || e.client.toLowerCase().includes(q));
+    /* Changed e.client to e.clientName to match ProjectExperience interface */
+    return allExpPool.filter(e => e.projectName.toLowerCase().includes(q) || e.clientName.toLowerCase().includes(q));
   }, [expSearchQuery]);
 
   const allTasksCompleted = useMemo(() => tasks.every(t => t.status === 'completed'), [tasks]);
@@ -243,7 +245,8 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
                          <div className="text-left">
                            <p className="text-sm font-black italic">{isStaff ? item.name : item.projectName}</p>
                            <p className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
-                             {isStaff ? item.role : item.client}
+                             {/* Changed item.client to item.clientName to match ProjectExperience interface */}
+                             {isStaff ? item.role : item.clientName}
                            </p>
                          </div>
                       </div>
@@ -365,7 +368,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
              </div>
 
              <div className="flex-1 overflow-y-auto p-12 custom-scrollbar-main text-left">
-                {/* 1. 团队匹配 */}
+                {/* 1. 成员拟定 */}
                 {activeTaskId === 'team' && (
                   <div className="space-y-8 animate-in fade-in duration-500">
                      <div className="flex items-center justify-between mb-8">
@@ -408,7 +411,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
                   </div>
                 )}
 
-                {/* 2. 业绩筛选 */}
+                {/* 2. 业绩遴选 */}
                 {activeTaskId === 'exp' && (
                   <div className="space-y-8 animate-in fade-in duration-500">
                      <div className="flex items-center justify-between mb-8 text-left">
@@ -440,7 +443,8 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
                                 </div>
                                 <div className="text-left">
                                   <p className="text-lg font-black text-slate-800">{exp.projectName}</p>
-                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 italic">{exp.client} · {exp.scale}</p>
+                                  {/* Changed exp.client to exp.clientName and exp.scale to exp.amount to match ProjectExperience interface */}
+                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 italic">{exp.clientName} · {exp.amount}</p>
                                 </div>
                              </div>
                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedExpIds.includes(exp.id) ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-slate-100'}`}>
@@ -452,7 +456,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
                   </div>
                 )}
 
-                {/* 3. 方案编撰 (重构增加智能体对话与模板) */}
+                {/* 3. 技术方案编撰 (重构增加智能体对话与模板) */}
                 {activeTaskId === 'content' && (
                   <div className="h-full flex space-x-12 animate-in fade-in duration-500">
                      <div className="flex-1 flex flex-col space-y-6">
@@ -645,10 +649,12 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
                                   {allExpPool.filter(e => selectedExpIds.includes(e.id)).map(e => (
                                     <div key={e.id} className="py-5 border-b-2 border-slate-100 flex justify-between items-center italic">
                                        <div>
+                                          {/* Changed e.client to e.clientName to match ProjectExperience interface */}
                                           <span className="text-lg font-black text-slate-800">{e.projectName}</span>
-                                          <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest italic">{e.client}</p>
+                                          <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest italic">{e.clientName}</p>
                                        </div>
-                                       <span className="text-xs font-black text-slate-300 font-mono tracking-widest">{e.completionDate}</span>
+                                       {/* Changed e.completionDate to e.endDate to match ProjectExperience interface */}
+                                       <span className="text-xs font-black text-slate-300 font-mono tracking-widest">{e.endDate}</span>
                                     </div>
                                   ))}
                                </div>

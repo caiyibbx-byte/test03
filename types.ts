@@ -6,7 +6,8 @@ export enum AppView {
   AI_SELECTOR = 'ai_selector',
   BID_PLAN = 'bid_plan',
   TEMPLATE_CONFIG = 'template_config',
-  KNOWLEDGE_BASE = 'knowledge_base',
+  PROJECT_BASE = 'project_base',
+  STAFF_BASE = 'staff_base',
   BID_WORKSPACE = 'bid_workspace',
   LOG_MANAGEMENT = 'log_management',
   AGENT_CONFIG = 'agent_config',
@@ -23,17 +24,28 @@ export type PermissionType =
   | 'AI_TUNING';       
 
 export interface SubPackage {
-  id: string;
-  name: string;
-  budget?: string;
-  requirement?: string;
+  id: string;             
+  index: number;          
+  subBidNumber: string;   
+  subBidName: string;     
+  lotNumber: string;      
+  lotName: string;        
+  scope: string;          
+  qualifications: string; 
+  experience: string;     
+  personnel: string;      
+  duration: string;       
+  location: string;       
+  maxPrice: string;       
+  estAmount: string;      
+  quoteMethod: string;    
 }
 
 export interface StaffMember {
   id: string;
   name: string;
   role: string;
-  score?: number; // AI 匹配分
+  score?: number; 
   years: number;
   majorProject: string;
   tags: string[];
@@ -60,13 +72,13 @@ export interface Tender {
 
 export interface BiddingTask extends Tender {
   projectLeader?: StaffMember;
-  commercialTeam?: StaffMember[]; // 新增：商务组
-  technicalTeam?: StaffMember[];  // 新增：技术组
+  commercialTeam?: StaffMember[]; 
+  technicalTeam?: StaffMember[];  
   assignDate?: string;
   priority: 'high' | 'medium' | 'low';
   source?: 'crawler' | 'ai';
   lotName?: string;
-  progress?: number; // 0 - 100
+  progress?: number; 
   currentStage?: 'scanned' | 'team_assigned' | 'drafting' | 'reviewing' | 'submitted';
 }
 
@@ -83,29 +95,72 @@ export interface SystemLog {
 
 export interface ProjectExperience {
   id: string;
-  projectName: string;
-  client: string;
-  completionDate: string;
-  scale: string;
-  description: string;
-  tags: string[];
+  contractYear: string;      // 签订合同年份
+  index: number;            // 序号
+  projectType: string;      // 项目类型
+  projectName: string;      // 1. 项目名称
+  location: string;         // 2. 项目所在地
+  clientName: string;       // 3. 发包人名称
+  clientAddress: string;    // 4. 发包人地址
+  contact: string;          // 5. 联系人
+  phone: string;            // 5. 发包人电话
+  amount: string;           // 6. 合同价格（万元）
+  signingDate: string;      // 7. 开工日期
+  endDate: string;          // 8. 竣工日期
+  leaderExperience: string; // 9. 承担的工作
+  quality: string;          // 10. 工程质量
+  leader: string;           // 11. 项目负责人
+  content: string;          // 12. 项目描述
+  remarks: string;          // 13. 其他说明
+  
+  keywords: string[];       
+  extendedKeywords: string[];
+  members: string;          
+  memberExperience: string; 
+  contractStatus: string;   
+  
+  contractScanUrls?: string[]; 
+  invoiceUrls?: string[];      
+  invoiceVerifyUrls?: string[];
+}
+
+export interface PersonnelCert {
+  name: string;      
+  level: string;     
+  authority: string; 
+  number: string;    
+  validity: string;  
+  fileUrl?: string;  
+}
+
+export interface PersonnelProject {
+  time: string;         
+  projectName: string;  
+  serviceType: string;  
+  role: string;         
+  client: string;       
+  contact: string;      
+  phone: string;        
+  workCertUrl?: string; 
 }
 
 export interface Personnel {
   id: string;
-  name: string;
-  role: string;
-  experienceYears: number;
-  certifications: string[];
-  skills: string[];
+  name: string;             
+  age: number;              
+  education: string;        
+  title: string;            
+  proposedPosition: string; 
+  years: number;            
+  similarYears: number;     
+  school: string;           
+  major: string;            
+  gradDate: string;         
+  eduCertUrl?: string;      
+  gradCertUrl?: string;     
+  certs: PersonnelCert[];
+  projects: PersonnelProject[];
   currentLoad: number; 
-}
-
-export interface UserRole {
-  id: string;
-  name: string;
-  permissions: PermissionType[];
-  description: string;
 }
 
 export interface StaffUser {
@@ -115,4 +170,11 @@ export interface StaffUser {
   roleId: string;   
   status: 'active' | 'suspended';
   lastLogin?: string;
+}
+
+export interface UserRole {
+  id: string;
+  name: string;
+  description: string;
+  permissions: PermissionType[];
 }
