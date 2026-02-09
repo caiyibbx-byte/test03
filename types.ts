@@ -1,6 +1,7 @@
 
 export enum AppView {
   DASHBOARD = 'dashboard',
+  MANAGER_VIEW = 'manager_view',
   CRAWLER = 'crawler',
   AI_SELECTOR = 'ai_selector',
   BID_PLAN = 'bid_plan',
@@ -12,6 +13,15 @@ export enum AppView {
   ADMIN = 'admin'
 }
 
+export type PermissionType = 
+  | 'DATA_VIEW'        
+  | 'BID_DRAFT'        
+  | 'CRAWLER_CTRL'     
+  | 'ASSET_MANAGE'     
+  | 'SYSTEM_LOG'       
+  | 'USER_ADMIN'       
+  | 'AI_TUNING';       
+
 export interface SubPackage {
   id: string;
   name: string;
@@ -19,18 +29,29 @@ export interface SubPackage {
   requirement?: string;
 }
 
+export interface StaffMember {
+  id: string;
+  name: string;
+  role: string;
+  score?: number; // AI 匹配分
+  years: number;
+  majorProject: string;
+  tags: string[];
+  dept?: string;
+  certs?: string[];
+}
+
 export interface Tender {
   id: string;
-  projectId: string; // 采购项目编号
+  projectId: string; 
   title: string;
   category: string;
-  type: '服务' | '物资' | '施工'; // 采购类型
+  type: '服务' | '物资' | '施工'; 
   publishDate: string;
-  deadline: string; // 文件获取截止
-  openingTime: string; // 开启应答文件时间
-  openingLocation: string; // 开启地点
-  purchaser: string; // 采购人
-  // Fix: Added 'analyzed' and 'new' to status union to match component usage
+  deadline: string; 
+  openingTime: string; 
+  openingLocation: string; 
+  purchaser: string; 
   status: '正在采购' | '已结束' | '待发布' | 'analyzed' | 'new';
   summary?: string;
   budget?: string;
@@ -38,10 +59,15 @@ export interface Tender {
 }
 
 export interface BiddingTask extends Tender {
-  manager?: string;
+  projectLeader?: StaffMember;
+  commercialTeam?: StaffMember[]; // 新增：商务组
+  technicalTeam?: StaffMember[];  // 新增：技术组
   assignDate?: string;
   priority: 'high' | 'medium' | 'low';
   source?: 'crawler' | 'ai';
+  lotName?: string;
+  progress?: number; // 0 - 100
+  currentStage?: 'scanned' | 'team_assigned' | 'drafting' | 'reviewing' | 'submitted';
 }
 
 export interface SystemLog {
@@ -72,11 +98,21 @@ export interface Personnel {
   experienceYears: number;
   certifications: string[];
   skills: string[];
-  currentLoad: number; // 0-100
+  currentLoad: number; 
 }
 
 export interface UserRole {
   id: string;
   name: string;
-  permissions: string[];
+  permissions: PermissionType[];
+  description: string;
+}
+
+export interface StaffUser {
+  id: string;       
+  name: string;
+  dept: string;
+  roleId: string;   
+  status: 'active' | 'suspended';
+  lastLogin?: string;
 }

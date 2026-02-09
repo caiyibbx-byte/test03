@@ -16,9 +16,11 @@ import {
   LayoutTemplate,
   Activity,
   Layers,
-  ChevronDown
+  ChevronDown,
+  LogOut,
+  MonitorPlay
 } from 'lucide-react';
-import { AppView, BiddingTask, Tender, SystemLog } from './types';
+import { AppView, BiddingTask, Tender, SystemLog, StaffUser } from './types';
 import DashboardView from './components/DashboardView';
 import CrawlerView from './components/CrawlerView';
 import AISelectorView from './components/AISelectorView';
@@ -29,12 +31,24 @@ import AgentConfigView from './components/AgentConfigView';
 import AdminView from './components/AdminView';
 import TemplateConfigView from './components/TemplateConfigView';
 import LogManagementView from './components/LogManagementView';
+import ManagerView from './components/ManagerView';
+import LoginView from './components/LoginView';
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [currentUser, setCurrentUser] = useState<StaffUser | null>({
+    id: 'ADMIN-001',
+    name: '系统管理员',
+    dept: '数字化指挥中心',
+    roleId: 'r1',
+    status: 'active',
+    lastLogin: new Date().toLocaleString()
+  });
+  
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   
-  // 管理哪些分组是展开的
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     '智慧驾驶舱': true,
     '投标全生命周期': true,
@@ -42,8 +56,12 @@ const App: React.FC = () => {
     '系统运维与配置': false
   });
 
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+  };
+
   const toggleGroup = (title: string) => {
-    // 如果侧边栏是收回的，点击时先展开侧边栏
     if (!isSidebarOpen) {
       setSidebarOpen(true);
       setOpenGroups(prev => ({ ...prev, [title]: true }));
@@ -61,6 +79,7 @@ const App: React.FC = () => {
       icon: LayoutDashboard,
       items: [
         { id: AppView.DASHBOARD, label: '系统仪表盘', icon: Activity },
+        { id: AppView.MANAGER_VIEW, label: '项目投标监控', icon: MonitorPlay },
       ]
     },
     {
@@ -104,7 +123,7 @@ const App: React.FC = () => {
 
   const [plannedTasks, setPlannedTasks] = useState<BiddingTask[]>([
     {
-      id: 'plan-001',
+      id: 'plan-001_lot_1',
       projectId: 'SGCC-2024-PJ01',
       type: '物资',
       openingTime: '2024-11-06 09:00:00',
@@ -115,37 +134,66 @@ const App: React.FC = () => {
       publishDate: '2024-10-15',
       deadline: '2024-11-05',
       status: 'analyzed',
-      budget: '2,450万元',
+      budget: '850万元',
       priority: 'high',
       source: 'crawler',
-      manager: '张经理',
-      assignDate: '2024-10-16'
+      assignDate: '2024-10-16',
+      lotName: '包1：10kV柱上变压器',
+      progress: 65,
+      currentStage: 'drafting',
+      projectLeader: { id: 'm1', name: '张经理', role: '资深项目总监', score: 98, years: 15, majorProject: '国网浙江500kV站改', tags: ['高压资质'] }
+    },
+    {
+      id: 'plan-002',
+      projectId: 'SGCC-2024-PJ02',
+      type: '服务',
+      openingTime: '2024-12-01 10:00:00',
+      openingLocation: '远程开标',
+      purchaser: '国网江苏电力',
+      title: '2024年信通运维框架采购',
+      category: '信通类',
+      publishDate: '2024-11-01',
+      deadline: '2024-11-28',
+      status: 'analyzed',
+      budget: '2400万元',
+      priority: 'medium',
+      progress: 20,
+      currentStage: 'team_assigned'
     }
   ]);
 
-  const addToPlan = (tender: Tender | any, source: 'crawler' | 'ai' = 'crawler') => {
+  const addToPlan = (tender: any, source: 'crawler' | 'ai' = 'crawler') => {
     if (plannedTasks.find(t => t.id === tender.id)) return;
-    const newTask: BiddingTask = { ...tender, priority: 'medium', source };
+    const newTask: BiddingTask = { ...tender, priority: 'medium', source, progress: 10, currentStage: 'scanned' };
     setPlannedTasks([...plannedTasks, newTask]);
   };
 
   const removeFromPlan = (id: string) => {
     setPlannedTasks(plannedTasks.filter(t => t.id !== id));
+    if (selectedTaskId === id) setSelectedTaskId(null);
   };
 
   const updateTask = (updatedTask: BiddingTask) => {
     setPlannedTasks(plannedTasks.map(t => t.id === updatedTask.id ? updatedTask : t));
   };
 
+  const handleEnterWorkspace = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setCurrentView(AppView.BID_WORKSPACE);
+  };
+
   const renderView = () => {
+    const selectedTask = plannedTasks.find(t => t.id === selectedTaskId);
+
     switch (currentView) {
       case AppView.DASHBOARD: return <DashboardView />;
+      case AppView.MANAGER_VIEW: return <ManagerView activeTasks={plannedTasks} />;
       case AppView.CRAWLER: return <CrawlerView plannedIds={plannedTasks.map(t => t.id)} onTogglePlan={(t) => plannedTasks.find(p => p.id === t.id) ? removeFromPlan(t.id) : addToPlan(t, 'crawler')} onAddLog={addLog} />;
       case AppView.AI_SELECTOR: return <AISelectorView plannedIds={plannedTasks.map(t => t.id)} onTogglePlan={(t) => addToPlan(t, 'ai')} />;
-      case AppView.BID_PLAN: return <BiddingPlanView tasks={plannedTasks} onUpdateTask={updateTask} onRemoveTask={removeFromPlan} />;
+      case AppView.BID_PLAN: return <BiddingPlanView tasks={plannedTasks} onUpdateTask={updateTask} onRemoveTask={removeFromPlan} onEnterWorkspace={handleEnterWorkspace} />;
       case AppView.TEMPLATE_CONFIG: return <TemplateConfigView />;
       case AppView.KNOWLEDGE_BASE: return <KnowledgeBaseView />;
-      case AppView.BID_WORKSPACE: return <BidWorkspaceView />;
+      case AppView.BID_WORKSPACE: return <BidWorkspaceView currentTask={selectedTask} />;
       case AppView.LOG_MANAGEMENT: return <LogManagementView logs={logs} onClearLogs={() => setLogs([])} />;
       case AppView.AGENT_CONFIG: return <AgentConfigView />;
       case AppView.ADMIN: return <AdminView />;
@@ -153,9 +201,19 @@ const App: React.FC = () => {
     }
   };
 
+  if (!isAuthenticated) {
+    return (
+      <LoginView 
+        onLogin={(user) => {
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        }} 
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
-      {/* 侧边栏 */}
       <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 ease-in-out bg-slate-900 text-white flex flex-col shadow-2xl z-50`}>
         <div className="p-6 flex items-center justify-between border-b border-white/5 shrink-0">
           {isSidebarOpen && <h1 className="text-xl font-bold tracking-tight text-blue-400">GridBid AI</h1>}
@@ -167,7 +225,6 @@ const App: React.FC = () => {
         <nav className="flex-1 mt-4 px-3 space-y-2 overflow-y-auto custom-scrollbar-nav">
           {menuGroups.map((group, idx) => (
             <div key={idx} className="space-y-1">
-              {/* 一级菜单项 (分类头) */}
               <button
                 onClick={() => toggleGroup(group.title)}
                 className={`w-full flex items-center p-3 rounded-xl transition-all group ${
@@ -188,7 +245,6 @@ const App: React.FC = () => {
                 )}
               </button>
 
-              {/* 二级菜单项 (手风琴展开内容) */}
               {isSidebarOpen && openGroups[group.title] && (
                 <div className="ml-4 pl-2 border-l border-white/5 space-y-1 animate-in slide-in-from-top-2 duration-300">
                   {group.items.map((item) => (
@@ -207,29 +263,32 @@ const App: React.FC = () => {
                   ))}
                 </div>
               )}
-              
-              {/* 收缩态下的简易分割 */}
-              {!isSidebarOpen && <div className="h-px bg-white/5 mx-4 my-2" />}
             </div>
           ))}
         </nav>
 
         <div className="p-4 border-t border-white/5 bg-black/20 shrink-0">
-          <div className={`flex items-center ${!isSidebarOpen ? 'justify-center' : ''}`}>
-            <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
-               <UserCircle size={22} />
+          <div className={`flex items-center group relative ${!isSidebarOpen ? 'justify-center' : 'justify-between'}`}>
+            <div className="flex items-center">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                <UserCircle size={22} />
+              </div>
+              {isSidebarOpen && (
+                <div className="ml-3 overflow-hidden">
+                  <p className="text-xs font-bold text-white truncate">{currentUser?.name}</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-black truncate tracking-tighter">ID: {currentUser?.id}</p>
+                </div>
+              )}
             </div>
             {isSidebarOpen && (
-              <div className="ml-3 overflow-hidden">
-                <p className="text-xs font-bold text-white truncate">超级管理员</p>
-                <p className="text-[10px] text-slate-500 uppercase font-black truncate tracking-tighter">SGCC-HQ-DEPT</p>
-              </div>
+              <button onClick={handleLogout} className="p-1.5 text-slate-500 hover:text-red-400 transition-colors">
+                <LogOut size={16} />
+              </button>
             )}
           </div>
         </div>
       </aside>
 
-      {/* 主内容区 */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 shrink-0 shadow-sm">
           <div className="flex items-center text-slate-500">
@@ -265,17 +324,6 @@ const App: React.FC = () => {
           </div>
         </div>
       </main>
-
-      <style>{`
-        .custom-scrollbar-nav::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar-nav::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar-nav::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        
-        .custom-scrollbar-main::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar-main::-webkit-scrollbar-track { background: #f1f5f9; }
-        .custom-scrollbar-main::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f1f5f9; }
-        .custom-scrollbar-main::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-      `}</style>
     </div>
   );
 };
