@@ -133,6 +133,15 @@ export interface PersonnelCert {
   fileUrl?: string;  
 }
 
+export interface EducationRecord {
+  level: string;        // 本科/硕士/博士
+  school: string;       
+  major: string;        
+  gradDate: string;     
+  gradCertUrl?: string; // 学历证书(毕业证)图片
+  degreeCertUrl?: string; // 学位证书图片
+}
+
 export interface PersonnelProject {
   time: string;         
   projectName: string;  
@@ -158,6 +167,7 @@ export interface Personnel {
   gradDate: string;         
   eduCertUrl?: string;      
   gradCertUrl?: string;     
+  educations: EducationRecord[]; // 详细学历记录
   certs: PersonnelCert[];
   projects: PersonnelProject[];
   currentLoad: number; 
