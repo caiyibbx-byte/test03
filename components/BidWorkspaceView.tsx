@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Users, Award, FileText, ChevronRight, BrainCircuit, 
   RefreshCw, WandSparkles, Download, Save, 
@@ -8,7 +8,8 @@ import {
   LayoutGrid, ArrowLeft, Clock, Activity,
   BadgeCheck, Zap, History, Briefcase, Building2, Layers,
   UserPlus, Star, Filter, MessageSquare, Send, CheckCircle2,
-  Plus, MousePointerClick, DatabaseZap
+  Plus, MousePointerClick, DatabaseZap, FileCode, FileType,
+  Bot, Settings, BookOpen, Sparkle, Cpu
 } from 'lucide-react';
 import { StaffMember, BiddingTask, ProjectExperience } from '../types';
 
@@ -23,6 +24,12 @@ interface TaskStatus {
   progress: number;
   icon: any;
   color: string;
+}
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
 }
 
 const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
@@ -41,9 +48,10 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
   const [activeTaskId, setActiveTaskId] = useState<'team' | 'exp' | 'content' | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
+  const [isExporting, setIsExporting] = useState<'pdf' | 'word' | null>(null);
 
   // 2. 弹出式搜索状态
-  const [showSearchOverlay, setShowSearchOverlay] = useState<'staff' | 'exp' | null>(null);
+  const [showSearchOverlay, setShowSearchOverlay] = useState<'staff' | 'exp' | 'template' | null>(null);
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const [expSearchQuery, setExpSearchQuery] = useState('');
 
@@ -51,8 +59,20 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [selectedExpIds, setSelectedExpIds] = useState<string[]>([]);
   const [aiDraft, setAiDraft] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
-  // 4. 任务进度状态
+  // 4. 智能体对话状态
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { role: 'assistant', content: '您好，我是技术方案编撰助手。我已经根据本项目招标文件提取了核心技术要点。您可以选择一个“撰写模板”开始，或者直接告诉我您的特殊编写需求。', timestamp: '14:20' }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  // 5. 任务进度状态
   const [tasks, setTasks] = useState<TaskStatus[]>([
     { id: 'team', name: '团队资质匹配', status: 'pending', progress: 0, icon: Users, color: 'blue' },
     { id: 'exp', name: '业绩成果筛选', status: 'pending', progress: 0, icon: Award, color: 'emerald' },
@@ -74,6 +94,12 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
     { id: 'e3', projectName: '苏州工业园智能配网试点', client: '国网江苏', completionDate: '2024-01', scale: '800万', description: '数字孪生应用...', tags: ['智能配网', '新技术'] },
     { id: 'e4', projectName: '四川超高压巡检服务', client: '国网四川', completionDate: '2024-03', scale: '3200万', description: '无人机自动化巡检...', tags: ['无人机', '超高压'] },
     { id: 'e5', projectName: '青海绿电交易平台开发', client: '国网青海', completionDate: '2023-08', scale: '500万', description: '区块链技术应用...', tags: ['软件开发', '区块链'] },
+  ];
+
+  const mockTemplates = [
+    { id: 't1', name: '标准变电站运维方案模板', desc: '包含设备巡检、故障响应、预防性维护等标准章节。', icon: BookOpen },
+    { id: 't2', name: '数字化配网集成方案模板', desc: '侧重于边缘计算、DTU接入、规约转换等内容。', icon: Cpu },
+    { id: 't3', name: '应急抢修与安全保障模板', desc: '特种作业流程、安全准则、应急预案专项。', icon: ShieldCheck },
   ];
 
   // 过滤逻辑
@@ -109,68 +135,122 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
     setSelectedExpIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) return;
+    const newMsg: ChatMessage = { role: 'user', content: chatInput, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+    setChatMessages([...chatMessages, newMsg]);
+    setChatInput('');
+    
+    // 模拟 AI 回复
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `收到。我将针对“${chatInput}”这一要求调整生成策略。如果您已经选择了“${selectedTemplate || '默认'}”模板，我会将此要求融入相应的技术章节中。`, 
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+      }]);
+    }, 1000);
+  };
+
   const generateAIDraft = () => {
     setIsGenerating(true);
     setTimeout(() => {
       const staffNames = allStaffPool.filter(s => selectedStaffIds.includes(s.id)).map(s => s.name).join('、');
       const expTitles = allExpPool.filter(e => selectedExpIds.includes(e.id)).map(e => e.projectName).join('\n* ');
-      setAiDraft(`## 第四章：技术响应方案\n\n### 1. 团队保障能力\n本项目负责人：${pm?.name}。骨干：${staffNames || '待定'}...\n\n### 2. 相关历史业绩\n* ${expTitles || '待完善'}`);
+      const templateName = selectedTemplate || '标准通用';
+      setAiDraft(`## 第四章：技术响应方案 (基于模板: ${templateName})\n\n### 1. 团队保障能力\n本项目由资深负责人：${pm?.name} 领衔。核心骨干包括：${staffNames || '待定'}。所有成员均具备电力系统行业 5 年以上从业经验，通过了内部 AI 匹配分 ${pm?.score}% 的严格筛选。\n\n### 2. 施工/运维历史业绩引用\n根据招标文件中对“类似业绩”的要求，我们筛选并引用了以下核心案例：\n* ${expTitles || '待完善'}\n\n### 3. 技术路线及详细响应内容\n基于本项目的特定需求及选定模板，我们将采用最新一代智慧配网架构... (此处由 AI 根据上下文继续扩充生成)`);
       setIsGenerating(false);
-    }, 1500);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `文书草稿已根据模板 [${templateName}] 及相关资产库成功合成。您可以点击预览查看全文效果。`, 
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+      }]);
+    }, 2000);
   };
 
-  // 搜索遮罩层组件
+  const handleExport = (type: 'pdf' | 'word') => {
+    setIsExporting(type);
+    setTimeout(() => {
+      setIsExporting(null);
+      alert(`${type.toUpperCase()} 导出成功！文件已保存至您的本地。`);
+    }, 2000);
+  };
+
+  // 搜索遮罩层组件 (扩展支持模板选择)
   const SearchOverlay = () => {
     if (!showSearchOverlay) return null;
     const isStaff = showSearchOverlay === 'staff';
+    const isExp = showSearchOverlay === 'exp';
+    const isTemplate = showSearchOverlay === 'template';
     
     return (
       <div className="fixed inset-0 z-[1000] flex items-start justify-center pt-[10vh] px-6">
         <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowSearchOverlay(null)} />
-        <div className="relative w-full max-w-2xl bg-white rounded-[40px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white/20 overflow-hidden animate-in slide-in-from-top-12 duration-500">
+        <div className="relative w-full max-w-2xl bg-white rounded-[40px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] border border-white/20 overflow-hidden animate-in slide-in-from-top-12 duration-500 text-left">
            <div className="p-8 border-b border-slate-100 flex items-center bg-slate-50/50">
               <Search className="text-blue-600 mr-4" size={24} />
               <input 
                 autoFocus
                 type="text" 
-                placeholder={isStaff ? "提示：正在全量人才库中检索指定专家 (输入姓名、专业资质...)" : "提示：正在全量业绩库中检索指定项目 (输入项目名、业主...)"}
-                value={isStaff ? staffSearchQuery : expSearchQuery}
-                onChange={(e) => isStaff ? setStaffSearchQuery(e.target.value) : setExpSearchQuery(e.target.value)}
+                placeholder={
+                  isStaff ? "全量人才库检索..." : 
+                  isExp ? "全量业绩库检索..." : "撰写模板库检索..."
+                }
+                value={isStaff ? staffSearchQuery : isExp ? expSearchQuery : ''}
+                onChange={(e) => isStaff ? setStaffSearchQuery(e.target.value) : isExp ? setExpSearchQuery(e.target.value) : null}
                 className="flex-1 bg-transparent outline-none text-xl font-black text-slate-800 placeholder:text-slate-300 italic"
               />
               <button onClick={() => setShowSearchOverlay(null)} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X size={20}/></button>
            </div>
            <div className="max-h-[50vh] overflow-y-auto p-6 custom-scrollbar-main space-y-2">
-              {(isStaff ? filteredStaff : filteredExp).map((item: any) => {
-                const isSelected = isStaff ? selectedStaffIds.includes(item.id) : selectedExpIds.includes(item.id);
-                return (
+              {isTemplate ? (
+                mockTemplates.map(t => (
                   <div 
-                    key={item.id}
-                    onClick={() => isStaff ? toggleStaff(item.id) : toggleExp(item.id)}
-                    className={`p-4 rounded-2xl flex items-center justify-between cursor-pointer transition-all ${
-                      isSelected ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'
+                    key={t.id}
+                    onClick={() => { setSelectedTemplate(t.name); setShowSearchOverlay(null); }}
+                    className={`p-6 rounded-2xl flex items-center justify-between cursor-pointer transition-all ${
+                      selectedTemplate === t.name ? 'bg-purple-600 text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'
                     }`}
                   >
-                    <div className="flex items-center space-x-4">
-                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${isSelected ? 'bg-white/20' : 'bg-slate-100'}`}>
-                         {isStaff ? <Users size={18}/> : <Briefcase size={18}/>}
+                    <div className="flex items-center space-x-5">
+                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black ${selectedTemplate === t.name ? 'bg-white/20' : 'bg-slate-100'}`}>
+                         <t.icon size={24}/>
                        </div>
                        <div className="text-left">
-                         <p className="text-sm font-black italic">{isStaff ? item.name : item.projectName}</p>
-                         <p className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
-                           {isStaff ? item.role : item.client}
+                         <p className="text-sm font-black italic">{t.name}</p>
+                         <p className={`text-[10px] font-bold mt-1 ${selectedTemplate === t.name ? 'text-purple-100' : 'text-slate-400'}`}>
+                           {t.desc}
                          </p>
                        </div>
                     </div>
-                    {isSelected && <Check size={20} strokeWidth={4}/>}
+                    {selectedTemplate === t.name && <CheckCircle2 size={24} strokeWidth={3}/>}
                   </div>
-                )
-              })}
-              {(isStaff ? filteredStaff : filteredExp).length === 0 && (
-                <div className="py-20 text-center opacity-20">
-                  <DatabaseZap size={48} className="mx-auto mb-4" />
-                  <p className="text-xs font-black uppercase tracking-widest italic">No matching records in Asset Pool</p>
-                </div>
+                ))
+              ) : (
+                (isStaff ? filteredStaff : filteredExp).map((item: any) => {
+                  const isSelected = isStaff ? selectedStaffIds.includes(item.id) : selectedExpIds.includes(item.id);
+                  return (
+                    <div 
+                      key={item.id}
+                      onClick={() => isStaff ? toggleStaff(item.id) : toggleExp(item.id)}
+                      className={`p-4 rounded-2xl flex items-center justify-between cursor-pointer transition-all ${
+                        isSelected ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-4">
+                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${isSelected ? 'bg-white/20' : 'bg-slate-100'}`}>
+                           {isStaff ? <Users size={18}/> : <Briefcase size={18}/>}
+                         </div>
+                         <div className="text-left">
+                           <p className="text-sm font-black italic">{isStaff ? item.name : item.projectName}</p>
+                           <p className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                             {isStaff ? item.role : item.client}
+                           </p>
+                         </div>
+                      </div>
+                      {isSelected && <Check size={20} strokeWidth={4}/>}
+                    </div>
+                  )
+                })
               )}
            </div>
            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center px-8">
@@ -212,7 +292,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
            <div className="flex items-center bg-blue-50 px-6 py-3 rounded-2xl border border-blue-100">
              <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black text-lg mr-4 shadow-lg">{pm.name[0]}</div>
              <div className="text-left">
-               <p className="text-sm font-black text-slate-900 leading-tight">{pm.name} <span className="text-blue-600 ml-1 text-[10px] italic font-black uppercase">Lead</span></p>
+               <p className="text-sm font-black text-slate-900 leading-tight">{pm.name} <span className="text-blue-600 ml-1 text-[10px] italic font-black uppercase">Leader</span></p>
                <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase italic tracking-widest">{pm.role}</p>
              </div>
            </div>
@@ -372,22 +452,30 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
                   </div>
                 )}
 
-                {/* 3. 方案编撰 */}
+                {/* 3. 方案编撰 (重构增加智能体对话与模板) */}
                 {activeTaskId === 'content' && (
                   <div className="h-full flex space-x-12 animate-in fade-in duration-500">
                      <div className="flex-1 flex flex-col space-y-6">
                         <div className="flex items-center justify-between">
                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest italic">Adaptive Technical Proposal Draft</h4>
-                           <div className="flex space-x-2">
+                           <div className="flex items-center space-x-3">
+                              {selectedTemplate && (
+                                <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-100 uppercase tracking-widest italic animate-in fade-in slide-in-from-right-2">
+                                  <BookOpen size={12} className="inline mr-1.5" /> 模板: {selectedTemplate}
+                                </span>
+                              )}
+                              <button onClick={() => setShowSearchOverlay('template')} className="flex items-center px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-black transition-all">
+                                 <Plus size={14} className="mr-2" /> 选用撰写模板库
+                              </button>
                               <button className="p-2.5 hover:bg-slate-100 rounded-xl transition-all"><Save size={18} className="text-slate-400"/></button>
                            </div>
                         </div>
-                        <div className="flex-1 bg-slate-50 rounded-[56px] border-2 border-slate-100 p-12 shadow-inner overflow-hidden relative">
+                        <div className="flex-1 bg-slate-50 rounded-[56px] border-2 border-slate-100 p-12 shadow-inner overflow-hidden relative group/draft">
                            <textarea 
                              value={aiDraft}
                              onChange={(e) => setAiDraft(e.target.value)}
                              placeholder="等待 AI 灵感编排助手生成内容..."
-                             className="w-full h-full bg-transparent resize-none outline-none font-serif text-xl leading-[2] text-slate-800 placeholder:text-slate-200 italic"
+                             className="w-full h-full bg-transparent resize-none outline-none font-serif text-xl leading-[2] text-slate-800 placeholder:text-slate-200 italic relative z-10"
                            />
                            {!aiDraft && (
                              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30 pointer-events-none">
@@ -395,45 +483,82 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
                                <p className="text-sm font-black uppercase tracking-[0.5em] italic mt-6">Void Manuscript</p>
                              </div>
                            )}
+                           {isGenerating && (
+                             <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center animate-in fade-in duration-300">
+                               <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-6 shadow-xl" />
+                               <p className="text-xs font-black text-slate-900 uppercase tracking-[0.3em] animate-pulse">AI 推理引擎合成中...</p>
+                             </div>
+                           )}
                         </div>
                      </div>
                      
-                     <div className="w-96 shrink-0 flex flex-col space-y-8 text-left">
-                        <div className="bg-slate-950 rounded-[48px] p-10 text-white relative overflow-hidden group shadow-2xl border border-white/5">
-                           <div className="absolute -top-24 -right-24 w-80 h-80 bg-blue-600/20 rounded-full blur-[100px] group-hover:bg-blue-600/40 transition-all duration-1000"></div>
-                           <h5 className="text-[10px] font-black uppercase tracking-[0.3em] mb-8 flex items-center text-blue-400 italic"><BrainCircuit size={18} className="mr-3"/> GridGPT Logic Hub</h5>
-                           <p className="text-xs text-blue-100/60 leading-relaxed italic mb-10">已加载负责人【{pm.name}】及其配套团队资产，准备进行全案响应内容的高性能生成。</p>
-                           <button 
-                             onClick={generateAIDraft}
-                             disabled={isGenerating}
-                             className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-[24px] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center disabled:opacity-50"
-                           >
-                             {isGenerating ? <RefreshCw className="animate-spin mr-3" size={16}/> : <WandSparkles className="mr-3" size={16}/>}
-                             {isGenerating ? '正在推演文本模型...' : '启动 AI 全文响应合成'}
-                           </button>
+                     <div className="w-[420px] shrink-0 flex flex-col space-y-6 text-left h-full">
+                        {/* 智能体对话窗口 */}
+                        <div className="flex-1 bg-slate-950 rounded-[48px] overflow-hidden flex flex-col shadow-2xl border border-white/5 relative">
+                           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent pointer-events-none" />
+                           <div className="p-6 border-b border-white/10 bg-slate-900/60 backdrop-blur-md flex items-center justify-between relative z-10">
+                              <div className="flex items-center text-blue-400">
+                                 <Bot size={22} className="mr-3" />
+                                 <span className="text-xs font-black uppercase tracking-widest italic">GridGPT 实时编排对话</span>
+                              </div>
+                              <button className="p-2 text-slate-500 hover:text-white transition-colors bg-white/5 rounded-xl border border-white/5"><Settings size={16}/></button>
+                           </div>
+                           
+                           <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar-dark relative z-10">
+                              {chatMessages.map((msg, idx) => (
+                                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
+                                   <div className={`max-w-[85%] p-4 rounded-[24px] text-xs leading-relaxed ${
+                                     msg.role === 'user' 
+                                       ? 'bg-blue-600 text-white rounded-tr-none font-bold' 
+                                       : 'bg-white/5 text-slate-200 border border-white/10 rounded-tl-none italic'
+                                   }`}>
+                                      {msg.content}
+                                      <div className={`text-[8px] mt-2 opacity-40 font-mono ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>{msg.timestamp}</div>
+                                   </div>
+                                </div>
+                              ))}
+                              <div ref={chatEndRef} />
+                           </div>
+
+                           <div className="p-6 bg-slate-900/80 border-t border-white/10 relative z-10">
+                              <div className="flex items-center space-x-3 bg-white/5 border border-white/5 rounded-2xl p-1.5 focus-within:border-blue-500/50 transition-all">
+                                <input 
+                                  value={chatInput}
+                                  onChange={(e) => setChatInput(e.target.value)}
+                                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                  placeholder="在此输入您的编撰修正需求..." 
+                                  className="flex-1 bg-transparent border-none outline-none text-white text-xs px-3 font-medium placeholder:text-slate-600"
+                                />
+                                <button onClick={handleSendMessage} className="bg-blue-600 p-2.5 text-white rounded-xl hover:bg-blue-500 transition-all shadow-lg active:scale-90">
+                                  <Send size={16} />
+                                </button>
+                              </div>
+                           </div>
                         </div>
                         
-                        <div className="bg-white border border-slate-100 rounded-[40px] p-8 shadow-sm flex-1 overflow-y-auto custom-scrollbar-main">
-                           <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 italic pb-4 border-b border-slate-50">实时元数据一览 (Metadata)</h5>
-                           <div className="space-y-6">
+                        {/* 元数据与资产卡片 */}
+                        <div className="bg-white border border-slate-100 rounded-[40px] p-8 shadow-sm h-64 overflow-y-auto custom-scrollbar-main">
+                           <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-50">
+                              <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">实时文书资产状态</h5>
+                              <span className="text-[10px] font-black text-emerald-500 flex items-center"><Zap size={10} className="mr-1"/> 合规扫描中</span>
+                           </div>
+                           <div className="space-y-5">
                               <div className="flex items-center justify-between text-[11px] font-bold italic">
-                                 <span className="text-slate-400">负责人</span>
-                                 <span className="text-slate-900">{pm.name}</span>
+                                 <span className="text-slate-400">已加载成员</span>
+                                 <span className="text-slate-900">{selectedStaffIds.length} 人</span>
                               </div>
                               <div className="flex items-center justify-between text-[11px] font-bold italic">
-                                 <span className="text-slate-400">选定骨干</span>
-                                 <span className="text-slate-900 border-b-2 border-blue-100">{selectedStaffIds.length} 名</span>
+                                 <span className="text-slate-400">已引用业绩</span>
+                                 <span className="text-slate-900">{selectedExpIds.length} 项</span>
                               </div>
-                              <div className="flex items-center justify-between text-[11px] font-bold italic">
-                                 <span className="text-slate-400">引用业绩</span>
-                                 <span className="text-slate-900 border-b-2 border-emerald-100">{selectedExpIds.length} 项</span>
-                              </div>
-                              <div className="pt-6 mt-6 border-t border-slate-50">
-                                 <div className="flex items-center text-[10px] font-black text-emerald-500 uppercase tracking-widest italic mb-4"><ShieldCheck size={14} className="mr-2"/> 系统预审结果</div>
-                                 <div className="bg-emerald-50 text-[10px] font-black text-emerald-600 px-4 py-3 rounded-2xl flex items-center">
-                                    <CheckCircle2 size={12} className="mr-2"/> 团队资质完全覆盖标包要求
-                                 </div>
-                              </div>
+                              <button 
+                                onClick={generateAIDraft}
+                                disabled={isGenerating}
+                                className="w-full py-4 mt-2 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center hover:bg-black shadow-xl shadow-slate-200 disabled:opacity-50"
+                              >
+                                {isGenerating ? <RefreshCw className="animate-spin mr-3" size={14}/> : <Sparkle className="mr-3 text-amber-400 animate-pulse" size={14}/>}
+                                启动 AI 文书响应合成
+                              </button>
                            </div>
                         </div>
                      </div>
@@ -447,7 +572,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
         {phase === 'preview' && (
           <div className="flex-1 flex flex-col bg-slate-950 rounded-[56px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-700 border border-white/5 relative">
              <div className="h-24 bg-slate-900/80 backdrop-blur-xl border-b border-white/5 flex items-center px-16 justify-between text-white shrink-0 z-10">
-                <div className="flex items-center space-x-16">
+                <div className="flex items-center space-x-12">
                    <div className="flex items-center bg-slate-800 rounded-3xl p-2 border border-white/10">
                       <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="p-3 text-slate-500 hover:text-white transition-colors hover:bg-slate-700 rounded-xl"><ZoomOut size={20}/></button>
                       <span className="px-8 text-sm font-black w-24 text-center">{zoomLevel}%</span>
@@ -458,9 +583,24 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask }) => {
                      <span className="text-xs font-bold text-emerald-400 flex items-center mt-1"><ShieldCheck size={18} className="mr-3" /> 全案逻辑一致性及合规性校验通过</span>
                    </div>
                 </div>
-                <div className="flex space-x-4">
-                  <button className="flex items-center px-8 py-4 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-[20px] border border-white/5"><Printer size={20} className="mr-3" /> 打印</button>
-                  <button className="flex items-center px-12 py-4 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black tracking-[0.2em] uppercase rounded-[20px] shadow-2xl shadow-blue-500/40"><Download size={20} className="mr-4" /> 导出最终 PDF</button>
+                <div className="flex space-x-3">
+                  <button className="flex items-center px-6 py-4 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-[20px] border border-white/5"><Printer size={20} className="mr-3" /> 打印</button>
+                  <button 
+                    disabled={!!isExporting}
+                    onClick={() => handleExport('word')}
+                    className="flex items-center px-8 py-4 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-[20px] border border-white/5 disabled:opacity-50"
+                  >
+                    {isExporting === 'word' ? <RefreshCw className="animate-spin mr-3" size={18}/> : <FileType size={18} className="mr-3 text-blue-400" />}
+                    {isExporting === 'word' ? '正在封装 Word...' : '导出 Word 文档'}
+                  </button>
+                  <button 
+                    disabled={!!isExporting}
+                    onClick={() => handleExport('pdf')}
+                    className="flex items-center px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black tracking-[0.2em] uppercase rounded-[20px] shadow-2xl shadow-blue-500/40 disabled:opacity-50"
+                  >
+                    {isExporting === 'pdf' ? <RefreshCw className="animate-spin mr-3" size={18}/> : <Download size={20} className="mr-4" />}
+                    {isExporting === 'pdf' ? '正在渲染 PDF...' : '导出最终 PDF'}
+                  </button>
                 </div>
               </div>
               
