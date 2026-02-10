@@ -149,7 +149,10 @@ const App: React.FC = () => {
       expSelectionLeader: { id: 'gt4', name: '孙经理', role: '商务总监', years: 14, majorProject: '物资集采', tags: ['商务'] },
       memberDraftingLeader: { id: 'gt5', name: '刘工', role: '概预算专家', years: 9, majorProject: '造价控制', tags: ['商务'] },
       techProposalLeader: { id: 'm2', name: '李经理', role: '技术主管', years: 10, majorProject: '云平台', tags: ['技术'] },
-      submissionLeader: { id: 'gt6', name: '陈工', role: '商务助理', years: 5, majorProject: '投标上传', tags: ['商务'] }
+      submissionLeader: { id: 'gt6', name: '陈工', role: '商务助理', years: 5, majorProject: '投标上传', tags: ['商务'] },
+      isExpDone: true,
+      isTeamDone: true,
+      isContentDone: false
     },
     {
       id: 'plan-002_lot_1',
@@ -174,13 +177,16 @@ const App: React.FC = () => {
       expSelectionLeader: { id: 'gt6', name: '陈工', role: '商务助理', years: 5, majorProject: '投标上传', tags: ['商务'] },
       memberDraftingLeader: { id: 'gt4', name: '孙经理', role: '商务总监', years: 14, majorProject: '物资集采', tags: ['商务'] },
       techProposalLeader: { id: 'm1', name: '张经理', role: '资深项目总监', score: 98, years: 15, majorProject: '国网浙江500kV站改', tags: ['商务'] },
-      submissionLeader: { id: 'gt4', name: '孙经理', role: '项目总负责人', years: 14, majorProject: '华南区域投标', tags: ['商务'] }
+      submissionLeader: { id: 'gt4', name: '孙经理', role: '项目总负责人', years: 14, majorProject: '华南区域投标', tags: ['商务'] },
+      isExpDone: false,
+      isTeamDone: false,
+      isContentDone: false
     }
   ]);
 
   const addToPlan = (tender: any, source: 'crawler' | 'ai' = 'crawler') => {
     if (plannedTasks.find(t => t.id === tender.id)) return;
-    const newTask: BiddingTask = { ...tender, priority: 'medium', source, progress: 10, currentStage: 'scanned' };
+    const newTask: BiddingTask = { ...tender, priority: 'medium', source, progress: 10, currentStage: 'scanned', isExpDone: false, isTeamDone: false, isContentDone: false };
     setPlannedTasks([...plannedTasks, newTask]);
   };
 
@@ -206,11 +212,11 @@ const App: React.FC = () => {
       case AppView.MANAGER_VIEW: return <ManagerView activeTasks={plannedTasks} />;
       case AppView.CRAWLER: return <CrawlerView plannedIds={plannedTasks.map(t => t.id)} onTogglePlan={(t) => plannedTasks.find(p => p.id === t.id) ? removeFromPlan(t.id) : addToPlan(t, 'crawler')} onAddLog={addLog} />;
       case AppView.AI_SELECTOR: return <AISelectorView plannedIds={plannedTasks.map(t => t.id)} onTogglePlan={(t) => addToPlan(t, 'ai')} />;
-      case AppView.BID_PLAN: return <BiddingPlanView tasks={plannedTasks} onUpdateTask={updateTask} onRemoveTask={removeFromPlan} onEnterWorkspace={handleEnterWorkspace} />;
+      case AppView.BID_PLAN: return <BiddingPlanView tasks={plannedTasks} currentUser={currentUser} onUpdateTask={updateTask} onRemoveTask={removeFromPlan} onEnterWorkspace={handleEnterWorkspace} />;
       case AppView.TEMPLATE_CONFIG: return <TemplateConfigView />;
       case AppView.PROJECT_BASE: return <KnowledgeBaseView mode="projects" />;
       case AppView.STAFF_BASE: return <PersonnelBaseView />;
-      case AppView.BID_WORKSPACE: return <BidWorkspaceView currentTask={selectedTask} currentUser={currentUser} />;
+      case AppView.BID_WORKSPACE: return <BidWorkspaceView currentTask={selectedTask} currentUser={currentUser} onUpdateTask={updateTask} />;
       case AppView.LOG_MANAGEMENT: return <LogManagementView logs={logs} onClearLogs={() => setLogs([])} />;
       case AppView.AGENT_CONFIG: return <AgentConfigView />;
       case AppView.ADMIN: return <AdminView />;
@@ -239,7 +245,7 @@ const App: React.FC = () => {
           </button>
         </div>
 
-        <nav className="flex-1 mt-4 px-3 space-y-2 overflow-y-auto custom-scrollbar-nav">
+        <nav className="flex-1 mt-4 px-3 space-y-2 overflow-y-auto custom-scrollbar-nav text-left">
           {menuGroups.map((group, idx) => (
             <div key={idx} className="space-y-1">
               <button
@@ -307,7 +313,7 @@ const App: React.FC = () => {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 shrink-0 shadow-sm">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 shrink-0 shadow-sm text-left">
           <div className="flex items-center text-slate-500">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">System Path</span>
             <ChevronRight size={14} className="mx-3 opacity-20" />
@@ -335,7 +341,7 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto grid-bg p-8 custom-scrollbar-main">
+        <div className="flex-1 overflow-y-auto grid-bg p-8 custom-scrollbar-main text-left">
           <div className="max-w-7xl mx-auto pb-12">
             {renderView()}
           </div>

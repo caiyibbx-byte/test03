@@ -83,6 +83,11 @@ export interface BiddingTask extends Tender {
   lotName?: string;
   progress?: number; 
   currentStage?: 'scanned' | 'team_assigned' | 'drafting' | 'reviewing' | 'submitted';
+
+  // 子环节完成状态
+  isExpDone?: boolean;
+  isTeamDone?: boolean;
+  isContentDone?: boolean;
 }
 
 export interface SystemLog {
