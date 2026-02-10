@@ -56,9 +56,12 @@ const initialProjects: ProjectExperience[] = [
     leaderExperience: '项目总负责，负责对接供电局营销部，统筹创意策划与成片交付，确保营商环境宣传任务按时保质完成。',
     members: '策划组(3人)、设计组(2人)、摄影团队',
     memberExperience: '负责24节气海报视觉设计、营商环境漫画脚本编写及现场拍摄协调。',
-    contractScanUrls: [],
-    invoiceUrls: [],
-    invoiceVerifyUrls: []
+    contractScanUrls: [
+      'https://placehold.co/800x1200?text=P1+Contract+Page+1',
+      'https://placehold.co/800x1200?text=P1+Contract+Seal+Page'
+    ],
+    invoiceUrls: ['https://placehold.co/1000x600?text=P1+Financial+Invoice'],
+    invoiceVerifyUrls: ['https://placehold.co/800x600?text=P1+Tax+Verification']
   },
   { 
     id: 'p2', 
@@ -84,9 +87,16 @@ const initialProjects: ProjectExperience[] = [
     leaderExperience: '担任EPC项目经理，协调设计、采购及施工进度，成功解决旧站带电施工风险，实现全站数字化投运。',
     members: '工程部、技术支持中心、现场施工队',
     memberExperience: '负责二次接线工艺规范制定及智能终端配置参数核对。',
-    contractScanUrls: [],
-    invoiceUrls: [],
-    invoiceVerifyUrls: []
+    contractScanUrls: [
+      'https://placehold.co/800x1200?text=P2+EPC+Contract+P1',
+      'https://placehold.co/800x1200?text=P2+EPC+Contract+P2',
+      'https://placehold.co/800x1200?text=P2+EPC+Contract+P3'
+    ],
+    invoiceUrls: [
+      'https://placehold.co/1000x600?text=P2+Progress+Invoice+01',
+      'https://placehold.co/1000x600?text=P2+Final+Invoice'
+    ],
+    invoiceVerifyUrls: ['https://placehold.co/800x600?text=P2+Audit+Verification']
   },
   { 
     id: 'p3', 
@@ -112,9 +122,9 @@ const initialProjects: ProjectExperience[] = [
     leaderExperience: '技术负责人，主持深度学习模型训练与部署，实现识别准确率由80%提升至92%。',
     members: '算法研究小组(5人)、数据标注团队',
     memberExperience: '负责样本数据预处理及边缘计算侧的模型适配优化。',
-    contractScanUrls: [],
-    invoiceUrls: [],
-    invoiceVerifyUrls: []
+    contractScanUrls: ['https://placehold.co/800x1200?text=P3+Service+Agreement'],
+    invoiceUrls: ['https://placehold.co/1000x600?text=P3+Service+Invoice'],
+    invoiceVerifyUrls: ['https://placehold.co/800x600?text=P3+System+Screenshot']
   },
   { 
     id: 'p4', 
@@ -140,9 +150,12 @@ const initialProjects: ProjectExperience[] = [
     leaderExperience: '项目总监，负责空间设计方案审核及智能化硬件集成的全过程管理，获评南网年度示范营业厅。',
     members: '设计室、集成部、三方运营公司',
     memberExperience: '负责交互流程设计及后台管理系统开发对接。',
-    contractScanUrls: [],
-    invoiceUrls: [],
-    invoiceVerifyUrls: []
+    contractScanUrls: [
+      'https://placehold.co/800x1200?text=P4+Construction+Contract',
+      'https://placehold.co/800x1200?text=P4+Acceptance+Report'
+    ],
+    invoiceUrls: ['https://placehold.co/1000x600?text=P4+Equipment+Invoice'],
+    invoiceVerifyUrls: ['https://placehold.co/800x600?text=P4+Verification+Detail']
   },
   { 
     id: 'p5', 
@@ -168,9 +181,9 @@ const initialProjects: ProjectExperience[] = [
     leaderExperience: '安全运维总长，负责建立主动防御体系，圆满完成建党百年重大会议保电安全保障任务。',
     members: 'SOC团队(8人)、红蓝对抗小组',
     memberExperience: '负责安全审计策略编写及边界防火墙漏洞修复建议。',
-    contractScanUrls: [],
-    invoiceUrls: [],
-    invoiceVerifyUrls: []
+    contractScanUrls: ['https://placehold.co/800x1200?text=P5+Annual+Maintenance+Contract'],
+    invoiceUrls: ['https://placehold.co/1000x600?text=P5+Quarterly+Invoice'],
+    invoiceVerifyUrls: ['https://placehold.co/800x600?text=P5+Tax+Record']
   }
 ];
 
@@ -559,7 +572,7 @@ const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ mode }) => {
            </div>
            <div className="text-left">
             <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase italic leading-none">项目业绩库</h2>
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2 italic italic">Grid Project Assets Registry</p>
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2 italic">Grid Project Assets Registry</p>
           </div>
         </div>
         <div className="flex space-x-3">

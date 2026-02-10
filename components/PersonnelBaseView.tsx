@@ -9,31 +9,17 @@ import {
   Edit3, 
   Trash2, 
   Upload, 
-  FileImage,
   BadgeCheck, 
   GraduationCap, 
-  Award, 
-  Briefcase,
-  History,
-  FileText,
-  Calendar,
-  Contact,
-  CheckCircle2,
-  Building,
   UserCheck,
   ChevronRight,
-  Eye,
-  Paperclip,
-  Trash,
   FileUp,
   Image as ImageIcon,
   School,
-  BookOpen,
   FileDown,
-  Download,
-  Printer
+  Download
 } from 'lucide-react';
-import { Personnel, PersonnelCert, PersonnelProject, EducationRecord } from '../types';
+import { Personnel } from '../types';
 
 const initialPersonnel: Personnel[] = [
   {
@@ -50,18 +36,134 @@ const initialPersonnel: Personnel[] = [
     gradDate: '2013',
     currentLoad: 0.6,
     educations: [
-      { level: '本科', school: '中山大学', major: '计算机科学与技术', gradDate: '2013', gradCertUrl: 'https://placehold.co/800x600?text=Sun+Yat-sen+University+Graduation+Certificate', degreeCertUrl: 'https://placehold.co/800x600?text=Bachelor+Degree+Certificate' }
+      { level: '本科', school: '中山大学', major: '计算机科学与技术', gradDate: '2013', gradCertUrl: 'https://placehold.co/800x600?text=Graduation+Certificate', degreeCertUrl: 'https://placehold.co/800x600?text=Degree+Certificate' }
     ],
     certs: [
-      { name: 'PMP证书（项目管理咨询师）', level: '高级', authority: 'PMI', number: 'PMP-123456', validity: '2027-12', fileUrl: 'https://placehold.co/600x800?text=PMP+Certificate+Image' },
-      { name: 'CMC证书（国际管理咨询师）', level: '国际级', authority: 'ICMCI', number: 'CMC-9988', validity: '2026-10', fileUrl: 'https://placehold.co/600x800?text=CMC+Certificate+Image' },
-      { name: '广东省质量管理小组活动咨询师（初级）', level: '初级', authority: '广东省质协', number: 'GD-QM-2024', validity: '永久' }
+      { name: 'PMP证书（项目管理咨询师）', level: '高级', authority: 'PMI', number: 'PMP-123456', validity: '2027-12', fileUrl: 'https://placehold.co/600x800?text=PMP+Cert' },
+      { name: 'CMC证书（国际管理咨询师）', level: '国际级', authority: 'ICMCI', number: 'CMC-9988', validity: '2026-10', fileUrl: 'https://placehold.co/600x800?text=CMC+Cert' }
     ],
     projects: [
-      { time: '2022 年', projectName: '南方电网数字电网集团通信信息科技有限公司2022-2023 年科技创新与成果转化管理咨询', role: '项目负责人', client: '南方电网', contact: '游 XX', phone: '156-0230-7721', serviceType: '管理咨询', workCertUrl: 'https://placehold.co/600x800?text=Work+Contract+Proof+2022' },
-      { time: '2023 年', projectName: '铜仁供电局 2023 年铜仁供电局创新工作室重组与优化管理研究', role: '项目负责人', client: '铜仁供电局', contact: '方 XX', phone: '139-8534-0567', serviceType: '管理研究' },
-      { time: '2023 年', projectName: '贵州电网有限责任公司六盘水供电局 2023 年生产指挥中心 2 项管理创新技术服务', role: '项目成员', client: '六盘水供电局', contact: '刘 XX', phone: '0858-8791166', serviceType: '技术服务' },
-      { time: '2024 年', projectName: '佛山供电局 2024 年科技成果鉴定及查新专项服务', role: '项目成员', client: '佛山供电局', contact: '刘工', phone: '0757-82851128', serviceType: '专项服务' }
+      { time: '2022 年', projectName: '南方电网数字电网集团通信信息科技有限公司2022-2023 年科技创新与成果转化管理咨询', role: '项目负责人', client: '南方电网', contact: '游 XX', phone: '156-0230-7721', serviceType: '管理咨询', workCertUrl: 'https://placehold.co/600x800?text=Project+Proof+1' }
+    ]
+  },
+  {
+    id: 's-zhang-wei',
+    name: '张维国',
+    age: 45,
+    education: '博士',
+    title: '教授级高级工程师',
+    proposedPosition: '技术负责人/总监',
+    years: 22,
+    similarYears: 18,
+    school: '清华大学',
+    major: '电力系统及其自动化',
+    gradDate: '2008',
+    currentLoad: 0.4,
+    educations: [
+      { level: '博士', school: '清华大学', major: '电力系统及其自动化', gradDate: '2008', gradCertUrl: 'https://placehold.co/800x600?text=Tsinghua+PhD+Grad' },
+      { level: '硕士', school: '浙江大学', major: '电气工程', gradDate: '2005' }
+    ],
+    certs: [
+      { name: '注册电气工程师（发输变电）', level: '执业资格', authority: '人社部', number: 'DG-2015-001', validity: '2028-06', fileUrl: 'https://placehold.co/600x800?text=Electrical+Engineer+Cert' },
+      { name: '特高压技术应用专家认证', level: '特级', authority: '国家电网', number: 'SG-UHV-99', validity: '永久', fileUrl: 'https://placehold.co/600x800?text=UHV+Expert+Cert' }
+    ],
+    projects: [
+      { time: '2020-2022', projectName: '±800kV特高压换流站智能化运维集成系统研发', role: '项目总监', client: '国家电网', contact: '王主任', phone: '010-6678XXX', serviceType: '研发', workCertUrl: 'https://placehold.co/600x800?text=UHV+Project+Proof' }
+    ]
+  },
+  {
+    id: 's-li-ming',
+    name: '李明',
+    age: 38,
+    education: '硕士',
+    title: '高级架构师',
+    proposedPosition: '系统架构负责人',
+    years: 15,
+    similarYears: 12,
+    school: '西安交通大学',
+    major: '软件工程',
+    gradDate: '2012',
+    currentLoad: 0.3,
+    educations: [
+      { level: '硕士', school: '西安交通大学', major: '软件工程', gradDate: '2012', gradCertUrl: 'https://placehold.co/800x600?text=XJTU+Master+Grad' }
+    ],
+    certs: [
+      { name: 'AWS 解决方案架构师认证', level: '专家级', authority: 'Amazon', number: 'AWS-SA-123', validity: '2025-10', fileUrl: 'https://placehold.co/600x800?text=AWS+Arch+Cert' },
+      { name: '软考系统分析师', level: '高级', authority: '工信部', number: 'SA-2018-99', validity: '永久', fileUrl: 'https://placehold.co/600x800?text=System+Analyst+Cert' }
+    ],
+    projects: [
+      { time: '2023 年', projectName: '国网新源控股数字化审计平台二期建设', role: '首席架构师', client: '国网新源', contact: '李工', phone: '138-1122-XXXX', serviceType: '软件开发', workCertUrl: 'https://placehold.co/600x800?text=Digital+Audit+Proof' }
+    ]
+  },
+  {
+    id: 's-wang-fang',
+    name: '王芳',
+    age: 34,
+    education: '本科',
+    title: '注册造价工程师',
+    proposedPosition: '商务/造价经理',
+    years: 12,
+    similarYears: 10,
+    school: '华北电力大学',
+    major: '工程造价',
+    gradDate: '2012',
+    currentLoad: 0.5,
+    educations: [
+      { level: '本科', school: '华北电力大学', major: '工程造价', gradDate: '2012', gradCertUrl: 'https://placehold.co/800x600?text=NCEPU+Grad' }
+    ],
+    certs: [
+      { name: '一级造价工程师（土建/安装）', level: '执业资格', authority: '住建部', number: 'ZJ-120033', validity: '2026-12', fileUrl: 'https://placehold.co/600x800?text=Cost+Engineer+Cert' }
+    ],
+    projects: [
+      { time: '2021-2023', projectName: '蒙东电力220kV输变电工程全过程造价咨询', role: '商务总负责人', client: '内蒙古电力', contact: '赵科长', phone: '0471-XXX-XXXX', serviceType: '咨询服务', workCertUrl: 'https://placehold.co/600x800?text=Cost+Consulting+Proof' }
+    ]
+  },
+  {
+    id: 's-zhao-chen',
+    name: '赵晨',
+    age: 41,
+    education: '本科',
+    title: '高级安全评价师',
+    proposedPosition: '安全质量管理负责人',
+    years: 18,
+    similarYears: 16,
+    school: '武汉大学',
+    major: '安全工程',
+    gradDate: '2006',
+    currentLoad: 0.2,
+    educations: [
+      { level: '本科', school: '武汉大学', major: '安全工程', gradDate: '2006' }
+    ],
+    certs: [
+      { name: '注册安全工程师', level: '执业资格', authority: '应急管理部', number: 'AQ-2012-045', validity: '2027-01', fileUrl: 'https://placehold.co/600x800?text=Safety+Officer+Cert' },
+      { name: 'HSE管理体系内审员证书', level: '中级', authority: '体系认证中心', number: 'HSE-8822', validity: '2025-12' }
+    ],
+    projects: [
+      { time: '2022 年', projectName: '国网江苏电力配电网带电作业安全风险评估项目', role: '安全总监', client: '江苏电力', contact: '孙处长', phone: '135-XXXX-0987', serviceType: '安全技术', workCertUrl: 'https://placehold.co/600x800?text=Safety+Project+Proof' }
+    ]
+  },
+  {
+    id: 's-liu-yang',
+    name: '刘洋',
+    age: 31,
+    education: '本科',
+    title: '中级工程师',
+    proposedPosition: '现场实施组长',
+    years: 8,
+    similarYears: 6,
+    school: '电子科技大学',
+    major: '通信工程',
+    gradDate: '2016',
+    currentLoad: 0.8,
+    educations: [
+      { level: '本科', school: '电子科技大学', major: '通信工程', gradDate: '2016', gradCertUrl: 'https://placehold.co/800x600?text=UESTC+Grad' }
+    ],
+    certs: [
+      { name: '通信工程师（交换技术）', level: '中级', authority: '工信部', number: 'TX-2019-033', validity: '永久', fileUrl: 'https://placehold.co/600x800?text=Comm+Engineer+Cert' },
+      { name: '高空作业证', level: '操作证', authority: '安监局', number: 'GK-9911', validity: '2025-05' }
+    ],
+    projects: [
+      { time: '2024 年', projectName: '海南供电局输电线路视频监控终端覆盖项目', role: '实施组长', client: '海南电网', contact: '林经理', phone: '133-XXXX-1122', serviceType: '工程实施', workCertUrl: 'https://placehold.co/600x800?text=Field+Project+Proof' }
     ]
   }
 ];
@@ -179,13 +281,11 @@ const PersonnelBaseView: React.FC = () => {
               <button onClick={() => setShowDocPreview(null)} className="p-2.5 bg-white/10 text-white rounded-xl hover:bg-red-500 transition-all"><X size={20}/></button>
            </div>
            
-           {/* 第一页：个人简历表（仿真原型图） */}
            <div className="relative bg-white shadow-2xl text-left font-serif p-[20mm] transition-all flex flex-col mb-10 shrink-0" style={{ width: '210mm', minHeight: '297mm' }}>
               <h2 className="text-xl font-black text-center mb-8 tracking-wider">{showDocPreview.name}个人简历及相关证书</h2>
               
               <table className="w-full border-collapse border-[1.5px] border-black text-[10.5pt] leading-[1.6]">
                  <tbody>
-                    {/* 第一行 */}
                     <tr>
                        <td className="border border-black p-2 bg-slate-50 w-[80px] font-bold text-center">姓 名</td>
                        <td className="border border-black p-2 text-center w-[120px]">{showDocPreview.name}</td>
@@ -196,7 +296,6 @@ const PersonnelBaseView: React.FC = () => {
                           {showDocPreview.certs.map((c, i) => <div key={i}>{c.name}</div>)}
                        </td>
                     </tr>
-                    {/* 第二行 */}
                     <tr>
                        <td className="border border-black p-2 bg-slate-50 font-bold text-center">职 称</td>
                        <td className="border border-black p-2 text-center">{showDocPreview.title}</td>
@@ -205,21 +304,18 @@ const PersonnelBaseView: React.FC = () => {
                        <td className="border border-black p-2 bg-slate-50 font-bold text-center">拟在本项目任职</td>
                        <td className="border border-black p-2 text-center font-bold">{showDocPreview.proposedPosition}</td>
                     </tr>
-                    {/* 第三行 */}
                     <tr>
                        <td className="border border-black p-2 bg-slate-50 font-bold text-center">工作年限</td>
                        <td className="border border-black p-2 text-center" colSpan={1}>{showDocPreview.years}</td>
                        <td className="border border-black p-2 bg-slate-50 font-bold text-center" colSpan={2}>从事类似工作年限</td>
                        <td className="border border-black p-2 text-center font-bold" colSpan={2}>{showDocPreview.similarYears}</td>
                     </tr>
-                    {/* 第四行 */}
                     <tr>
                        <td className="border border-black p-2 bg-slate-50 font-bold text-center">毕业学校</td>
                        <td className="border border-black p-3 text-center" colSpan={5}>
                           {showDocPreview.gradDate}年毕业于{showDocPreview.school}{showDocPreview.major}专业
                        </td>
                     </tr>
-                    {/* 工作经历表头 */}
                     <tr>
                        <td className="border border-black p-2 bg-slate-100 font-bold text-center" colSpan={6}>主要工作经历</td>
                     </tr>
@@ -229,7 +325,6 @@ const PersonnelBaseView: React.FC = () => {
                        <td className="border border-black p-2 bg-slate-50 font-bold text-center">担任职务</td>
                        <td className="border border-black p-2 bg-slate-50 font-bold text-center">委托人及联系电话</td>
                     </tr>
-                    {/* 工作经历内容 */}
                     {showDocPreview.projects.map((proj, idx) => (
                       <tr key={idx}>
                          <td className="border border-black p-2 text-center text-xs">{proj.time}</td>
@@ -241,7 +336,6 @@ const PersonnelBaseView: React.FC = () => {
                          </td>
                       </tr>
                     ))}
-                    {/* 补充空白行 */}
                     {Array.from({ length: Math.max(0, 8 - showDocPreview.projects.length) }).map((_, i) => (
                       <tr key={`empty-${i}`} className="h-10">
                         <td className="border border-black p-2"></td>
@@ -252,14 +346,12 @@ const PersonnelBaseView: React.FC = () => {
                     ))}
                  </tbody>
               </table>
-
               <div className="mt-auto pt-8 flex justify-between items-center opacity-40 italic">
                  <span className="text-[8pt] font-sans">GridBid AI 资质管理系统 · 档案 ID: {showDocPreview.id}</span>
                  <span className="text-[8pt] font-sans">第 1 页</span>
               </div>
            </div>
 
-           {/* 附件页：学历及学位证书 */}
            {showDocPreview.educations.some(e => e.gradCertUrl || e.degreeCertUrl) && (
              <div className="relative bg-white shadow-2xl p-[20mm] mb-10 shrink-0" style={{ width: '210mm', minHeight: '297mm' }}>
                 <h3 className="text-lg font-bold border-l-4 border-black pl-4 mb-10">附件一：学历及学位证书扫描件</h3>
@@ -287,7 +379,6 @@ const PersonnelBaseView: React.FC = () => {
              </div>
            )}
 
-           {/* 附件页：各类资质证书 */}
            {showDocPreview.certs.some(c => c.fileUrl) && (
              <div className="relative bg-white shadow-2xl p-[20mm] mb-10 shrink-0" style={{ width: '210mm', minHeight: '297mm' }}>
                 <h3 className="text-lg font-bold border-l-4 border-black pl-4 mb-10">附件二：执业资格及岗位证书</h3>
@@ -305,7 +396,6 @@ const PersonnelBaseView: React.FC = () => {
              </div>
            )}
 
-           {/* 附件页：工作经历证明 */}
            {showDocPreview.projects.some(p => p.workCertUrl) && (
              <div className="relative bg-white shadow-2xl p-[20mm] mb-10 shrink-0" style={{ width: '210mm', minHeight: '297mm' }}>
                 <h3 className="text-lg font-bold border-l-4 border-black pl-4 mb-10">附件三：主要项目工作经历证明文件</h3>
@@ -519,10 +609,10 @@ const PersonnelBaseView: React.FC = () => {
                                     <div className="flex items-center justify-center">
                                        {proj.workCertUrl ? (
                                          <div className="flex items-center space-x-2 p-2 bg-emerald-50 border border-emerald-100 rounded-xl cursor-pointer hover:bg-emerald-100 transition-all" onClick={() => window.open(proj.workCertUrl)}>
-                                           <FileText size={14} className="text-emerald-600"/><span className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">业绩证明</span>
+                                           <span className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">业绩证明</span>
                                            <button onClick={(e) => { e.stopPropagation(); deleteWorkFile(idx); }} className="text-emerald-300 hover:text-red-500"><X size={12} strokeWidth={3}/></button>
                                          </div>
-                                       ) : <button onClick={() => handleFileUploadTrigger('work', idx)} className="p-2.5 text-slate-300 hover:text-indigo-600 bg-slate-50 rounded-xl transition-all border border-slate-100" title="上传证明"><Paperclip size={18} /></button>}
+                                       ) : <button onClick={() => handleFileUploadTrigger('work', idx)} className="p-2.5 text-slate-300 hover:text-indigo-600 bg-slate-50 rounded-xl transition-all border border-slate-100" title="上传证明"><Plus size={18} /></button>}
                                     </div>
                                  </td>
                                  <td className="px-2 py-4 text-center"><button onClick={() => setFormData({...formData, projects: formData.projects?.filter((_, i) => i !== idx)})} className="p-2 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover/prow:opacity-100"><Trash2 size={16}/></button></td>
@@ -579,7 +669,7 @@ const PersonnelBaseView: React.FC = () => {
           <table className="w-full text-left table-fixed border-collapse" style={{ width: '2800px' }}>
             <thead className="text-[10px] font-black text-white uppercase tracking-[0.15em] bg-slate-900 sticky top-0 z-20">
               <tr className="divide-x divide-white/5">
-                <th className="px-6 py-8 w-[180px] sticky left-0 bg-slate-900 shadow-xl text-indigo-400">姓名 (拟任职)</th>
+                <th className="px-6 py-8 w-[180px] sticky left-0 bg-slate-900 shadow-xl text-indigo-400 text-center">姓名 (拟任职)</th>
                 <th className="px-6 py-8 w-[100px] text-center">年龄</th>
                 <th className="px-6 py-8 w-[120px] text-center">最高学历</th>
                 <th className="px-6 py-8 w-[180px]">技术职称</th>
