@@ -24,15 +24,17 @@ import {
   DatabaseZap,
   FileEdit,
   ShieldCheck,
-  Send
+  Send,
+  FileText,
+  BadgeCheck,
+  ClipboardCheck
 } from 'lucide-react';
-import { BiddingTask, Tender } from '../types';
+import { BiddingTask, Tender, StaffMember } from '../types';
 
 interface ManagerViewProps {
   activeTasks: BiddingTask[];
 }
 
-// 1. 根据需求重定义 6 个核心业务阶段
 const STAGES = [
   { key: 'leader_assigned', label: '负责人指定', icon: UserCheck, color: 'text-blue-500' },
   { key: 'team_matched', label: '成员拟定', icon: Users2, color: 'text-indigo-500' },
@@ -46,17 +48,14 @@ const ManagerView: React.FC<ManagerViewProps> = ({ activeTasks }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
 
-  // 映射旧状态到新阶段（为了演示兼容性）
   const getMappedStage = (task: BiddingTask) => {
     if (task.currentStage === 'submitted') return 'bid_submitted';
     if (task.currentStage === 'reviewing') return 'compliance_review';
     if (task.currentStage === 'drafting') return 'tech_drafting';
-    // 默认映射
     return task.currentStage || 'leader_assigned';
   };
 
   const allProjects = useMemo(() => {
-    // 总经理视图下，每个 activeTask 已经是一个原子化的标包 (Lot)
     return activeTasks.map(t => ({ 
       ...t, 
       isArchived: false,
@@ -84,9 +83,20 @@ const ManagerView: React.FC<ManagerViewProps> = ({ activeTasks }) => {
     }, 0)
   };
 
+  const RoleBadge = ({ role, staff }: { role: string, staff?: StaffMember }) => (
+    <div className="flex items-center p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs mr-3 ${staff ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-300'}`}>
+        {staff ? staff.name[0] : '?'}
+      </div>
+      <div className="text-left">
+        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter leading-none mb-1">{role}</p>
+        <p className="text-xs font-black text-slate-800 leading-none">{staff ? staff.name : '未指派'}</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 text-left">
-      {/* 标包详情钻取弹窗 */}
       {selectedProject && (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setSelectedProject(null)} />
@@ -109,8 +119,7 @@ const ManagerView: React.FC<ManagerViewProps> = ({ activeTasks }) => {
               <button onClick={() => setSelectedProject(null)} className="p-3 hover:bg-white rounded-full transition-colors shadow-sm"><X size={24}/></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-12 space-y-12 custom-scrollbar-main">
-               {/* 阶段大图 */}
+            <div className="flex-1 overflow-y-auto p-12 space-y-12 custom-scrollbar-main text-left">
                <section>
                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-10 flex items-center italic">
                     <Activity size={16} className="mr-2 text-blue-500" /> 标包全生命周期监控 (Bidding Trace)
@@ -147,29 +156,17 @@ const ManagerView: React.FC<ManagerViewProps> = ({ activeTasks }) => {
                <div className="grid grid-cols-2 gap-10">
                   <section className="bg-slate-50 p-8 rounded-[32px] border border-slate-100">
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center italic">
-                      <Users2 size={16} className="mr-2 text-indigo-500" /> 团队与资质配置
+                      <Users2 size={16} className="mr-2 text-indigo-500" /> 核心职责指派 (Responsibilities)
                     </h4>
-                    {selectedProject.projectLeader ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
-                           <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black mr-4">{selectedProject.projectLeader.name[0]}</div>
-                           <div className="text-left">
-                              <p className="text-sm font-black text-slate-900 leading-none">{selectedProject.projectLeader.name}</p>
-                              <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">项目负责人 (Director)</p>
-                           </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                           {(selectedProject.technicalTeam || []).map((s: any) => (
-                             <span key={s.id} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600">技术: {s.name}</span>
-                           ))}
-                           {(selectedProject.commercialTeam || []).map((s: any) => (
-                             <span key={s.id} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600">商务: {s.name}</span>
-                           ))}
-                        </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <RoleBadge role="项目负责人" staff={selectedProject.projectLeader} />
+                      <RoleBadge role="方案负责人" staff={selectedProject.techProposalLeader} />
+                      <RoleBadge role="业绩负责人" staff={selectedProject.expSelectionLeader} />
+                      <RoleBadge role="成员拟定" staff={selectedProject.memberDraftingLeader} />
+                      <div className="col-span-2">
+                        <RoleBadge role="最终上传负责人" staff={selectedProject.submissionLeader} />
                       </div>
-                    ) : (
-                      <p className="text-xs text-slate-400 italic">团队资源正在智能匹配中...</p>
-                    )}
+                    </div>
                   </section>
 
                   <section className="bg-slate-50 p-8 rounded-[32px] border border-slate-100">
@@ -254,7 +251,6 @@ const ManagerView: React.FC<ManagerViewProps> = ({ activeTasks }) => {
         </div>
       </div>
 
-      {/* 核心指标卡片 */}
       <div className="grid grid-cols-4 gap-6">
         {[
           { label: '在投活跃标包', value: stats.totalLots, unit: 'LOTS', icon: Target, color: 'text-blue-600' },
@@ -277,7 +273,6 @@ const ManagerView: React.FC<ManagerViewProps> = ({ activeTasks }) => {
         ))}
       </div>
 
-      {/* 活跃标包进度看板 */}
       <div className="bg-white rounded-[48px] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         <div className="px-12 py-8 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
            <div className="flex items-center space-x-3">
@@ -301,7 +296,6 @@ const ManagerView: React.FC<ManagerViewProps> = ({ activeTasks }) => {
                 onClick={() => setSelectedProject(lot)}
                 className="bg-slate-50 border border-slate-100 rounded-[40px] p-8 flex flex-col space-y-8 hover:bg-white hover:shadow-2xl hover:border-blue-200 transition-all cursor-pointer group relative overflow-hidden"
               >
-                {/* 装饰条 */}
                 <div className={`absolute top-0 left-0 w-2 h-full ${lot.priority === 'high' ? 'bg-red-500' : 'bg-slate-900'}`} />
 
                 <div className="flex items-center justify-between relative z-10">
@@ -340,7 +334,6 @@ const ManagerView: React.FC<ManagerViewProps> = ({ activeTasks }) => {
                    </div>
                 </div>
 
-                {/* 6 阶段进度轴 */}
                 <div className="relative pt-4">
                    <div className="flex justify-between items-center mb-4 px-2">
                       {STAGES.map((s, i) => {
@@ -361,7 +354,6 @@ const ManagerView: React.FC<ManagerViewProps> = ({ activeTasks }) => {
                         );
                       })}
                    </div>
-                   {/* 进度条底层 */}
                    <div className="h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner p-0.5">
                       <div 
                         className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(37,99,235,0.4)] relative"

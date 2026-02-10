@@ -145,24 +145,36 @@ const App: React.FC = () => {
       lotName: '包1：10kV柱上变压器',
       progress: 65,
       currentStage: 'drafting',
-      projectLeader: { id: 'm1', name: '张经理', role: '资深项目总监', score: 98, years: 15, majorProject: '国网浙江500kV站改', tags: ['高压资质'] }
+      projectLeader: { id: 'ADMIN-001', name: '系统管理员', role: '资深项目总监', score: 98, years: 15, majorProject: '国网浙江500kV站改', tags: ['商务', '高压资质'] },
+      expSelectionLeader: { id: 'gt4', name: '孙经理', role: '商务总监', years: 14, majorProject: '物资集采', tags: ['商务'] },
+      memberDraftingLeader: { id: 'gt5', name: '刘工', role: '概预算专家', years: 9, majorProject: '造价控制', tags: ['商务'] },
+      techProposalLeader: { id: 'm2', name: '李经理', role: '技术主管', years: 10, majorProject: '云平台', tags: ['技术'] },
+      submissionLeader: { id: 'gt6', name: '陈工', role: '商务助理', years: 5, majorProject: '投标上传', tags: ['商务'] }
     },
     {
-      id: 'plan-002',
-      projectId: 'SGCC-2024-PJ02',
+      id: 'plan-002_lot_1',
+      projectId: 'CSG-2024-SERVICES',
       type: '服务',
-      openingTime: '2024-12-01 10:00:00',
-      openingLocation: '远程开标',
-      purchaser: '国网江苏电力',
-      title: '2024年信通运维框架采购',
+      openingTime: '2024-12-10 10:00:00',
+      openingLocation: '广州公共资源交易中心',
+      purchaser: '广东电网有限责任公司',
+      title: '2024年广东电网数字化系统运维支撑服务框架招标',
       category: '信通类',
-      publishDate: '2024-11-01',
-      deadline: '2024-11-28',
+      publishDate: '2024-10-20',
+      deadline: '2024-12-01',
       status: 'analyzed',
-      budget: '2400万元',
+      budget: '1200万元',
       priority: 'medium',
-      progress: 20,
-      currentStage: 'team_assigned'
+      source: 'ai',
+      assignDate: '2024-10-22',
+      lotName: '包1：核心生产系统运维',
+      progress: 25,
+      currentStage: 'team_assigned',
+      projectLeader: { id: 'gt4', name: '孙经理', role: '商务总监', years: 14, majorProject: '物资集采', tags: ['商务'] },
+      expSelectionLeader: { id: 'gt6', name: '陈工', role: '商务助理', years: 5, majorProject: '投标上传', tags: ['商务'] },
+      memberDraftingLeader: { id: 'gt4', name: '孙经理', role: '商务总监', years: 14, majorProject: '物资集采', tags: ['商务'] },
+      techProposalLeader: { id: 'm1', name: '张经理', role: '资深项目总监', score: 98, years: 15, majorProject: '国网浙江500kV站改', tags: ['商务'] },
+      submissionLeader: { id: 'gt4', name: '孙经理', role: '项目总负责人', years: 14, majorProject: '华南区域投标', tags: ['商务'] }
     }
   ]);
 
@@ -198,7 +210,7 @@ const App: React.FC = () => {
       case AppView.TEMPLATE_CONFIG: return <TemplateConfigView />;
       case AppView.PROJECT_BASE: return <KnowledgeBaseView mode="projects" />;
       case AppView.STAFF_BASE: return <PersonnelBaseView />;
-      case AppView.BID_WORKSPACE: return <BidWorkspaceView currentTask={selectedTask} />;
+      case AppView.BID_WORKSPACE: return <BidWorkspaceView currentTask={selectedTask} currentUser={currentUser} />;
       case AppView.LOG_MANAGEMENT: return <LogManagementView logs={logs} onClearLogs={() => setLogs([])} />;
       case AppView.AGENT_CONFIG: return <AgentConfigView />;
       case AppView.ADMIN: return <AdminView />;

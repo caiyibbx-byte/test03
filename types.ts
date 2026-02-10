@@ -15,13 +15,13 @@ export enum AppView {
 }
 
 export type PermissionType = 
-  | 'DATA_VIEW'        
-  | 'BID_DRAFT'        
-  | 'CRAWLER_CTRL'     
-  | 'ASSET_MANAGE'     
-  | 'SYSTEM_LOG'       
-  | 'USER_ADMIN'       
-  | 'AI_TUNING';       
+  | 'BID_EXP_SELECT'     // 标书业绩遴选
+  | 'BID_MEMBER_DRAFT'   // 成员拟定
+  | 'BID_TECH_DRAFT'     // 技术方案编撰
+  | 'BID_SUBMISSION'     // 投标
+  | 'BID_PLAN_MANAGE'    // 投标计划管理
+  | 'DATA_VIEW'          // 数据查看
+  | 'SYSTEM_LOG';        // 系统日志
 
 export interface SubPackage {
   id: string;             
@@ -72,8 +72,11 @@ export interface Tender {
 
 export interface BiddingTask extends Tender {
   projectLeader?: StaffMember;
-  commercialTeam?: StaffMember[]; 
-  technicalTeam?: StaffMember[];  
+  expSelectionLeader?: StaffMember;    
+  memberDraftingLeader?: StaffMember;  
+  techProposalLeader?: StaffMember;    
+  submissionLeader?: StaffMember;      
+  
   assignDate?: string;
   priority: 'high' | 'medium' | 'low';
   source?: 'crawler' | 'ai';
@@ -95,30 +98,28 @@ export interface SystemLog {
 
 export interface ProjectExperience {
   id: string;
-  contractYear: string;      // 签订合同年份
-  index: number;            // 序号
-  projectType: string;      // 项目类型
-  projectName: string;      // 1. 项目名称
-  location: string;         // 2. 项目所在地
-  clientName: string;       // 3. 发包人名称
-  clientAddress: string;    // 4. 发包人地址
-  contact: string;          // 5. 联系人
-  phone: string;            // 5. 发包人电话
-  amount: string;           // 6. 合同价格（万元）
-  signingDate: string;      // 7. 开工日期
-  endDate: string;          // 8. 竣工日期
-  leaderExperience: string; // 9. 承担的工作
-  quality: string;          // 10. 工程质量
-  leader: string;           // 11. 项目负责人
-  content: string;          // 12. 项目描述
-  remarks: string;          // 13. 其他说明
-  
-  keywords: string[];       
+  contractYear: string;
+  index: number;
+  projectType: string;
+  projectName: string;
+  location: string;
+  clientName: string;
+  clientAddress: string;
+  contact: string;
+  phone: string;
+  amount: string;
+  signingDate: string;
+  endDate: string;
+  leaderExperience: string;
+  quality: string;
+  leader: string;
+  content: string;
+  remarks: string;
+  keywords: string[];
   extendedKeywords: string[];
-  members: string;          
-  memberExperience: string; 
-  contractStatus: string;   
-  
+  members: string;
+  memberExperience: string;
+  contractStatus: string;
   contractScanUrls?: string[]; 
   invoiceUrls?: string[];      
   invoiceVerifyUrls?: string[];
@@ -134,12 +135,12 @@ export interface PersonnelCert {
 }
 
 export interface EducationRecord {
-  level: string;        // 本科/硕士/博士
+  level: string;
   school: string;       
   major: string;        
   gradDate: string;     
-  gradCertUrl?: string; // 学历证书(毕业证)图片
-  degreeCertUrl?: string; // 学位证书图片
+  gradCertUrl?: string; 
+  degreeCertUrl?: string; 
 }
 
 export interface PersonnelProject {
@@ -167,7 +168,7 @@ export interface Personnel {
   gradDate: string;         
   eduCertUrl?: string;      
   gradCertUrl?: string;     
-  educations: EducationRecord[]; // 详细学历记录
+  educations: EducationRecord[]; 
   certs: PersonnelCert[];
   projects: PersonnelProject[];
   currentLoad: number; 

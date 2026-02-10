@@ -31,16 +31,51 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // 模拟网络延迟
+    // 模拟身份核验逻辑
     setTimeout(() => {
-      const user: StaffUser = {
-        id: formData.id || 'S-888',
-        name: formData.name || '访问用户',
-        dept: formData.dept || '临时部门',
-        roleId: 'r2',
-        status: 'active',
-        lastLogin: new Date().toLocaleString()
-      };
+      let user: StaffUser;
+
+      // 演示账号自动匹配逻辑
+      const staffId = formData.id.toLowerCase();
+      if (staffId === 'gt4') {
+        user = {
+          id: 'gt4',
+          name: '孙经理',
+          dept: '商务部',
+          roleId: 'r2',
+          status: 'active',
+          lastLogin: new Date().toLocaleString()
+        };
+      } else if (staffId === 'm2') {
+        user = {
+          id: 'm2',
+          name: '李专家',
+          dept: '技术中心',
+          roleId: 'r3',
+          status: 'active',
+          lastLogin: new Date().toLocaleString()
+        };
+      } else if (staffId === 'admin-001') {
+        user = {
+          id: 'ADMIN-001',
+          name: '系统管理员',
+          dept: '数字化指挥中心',
+          roleId: 'r1',
+          status: 'active',
+          lastLogin: new Date().toLocaleString()
+        };
+      } else {
+        // 普通登录/注册逻辑
+        user = {
+          id: formData.id || 'S-888',
+          name: formData.name || '访问用户',
+          dept: formData.dept || '临时部门',
+          roleId: 'r2',
+          status: 'active',
+          lastLogin: new Date().toLocaleString()
+        };
+      }
+
       onLogin(user);
       setIsLoading(false);
     }, 1200);
@@ -81,19 +116,19 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               智能投标<br />
               驱动电网未来
             </h2>
-            <p className="mt-8 text-blue-100/70 text-lg font-medium max-w-sm leading-relaxed">
+            <p className="mt-8 text-blue-100/70 text-lg font-medium max-w-sm leading-relaxed text-left">
               基于 GridGPT 核心推理引擎，为电网企业提供全生命周期的投标协同与数字化支撑。
             </p>
           </div>
 
           <div className="relative z-10">
             <div className="flex items-center space-x-6">
-              <div className="flex flex-col">
+              <div className="flex flex-col text-left">
                 <span className="text-white text-2xl font-black">2.4k+</span>
                 <span className="text-blue-200/50 text-[10px] font-black uppercase tracking-widest">Active Nodes</span>
               </div>
               <div className="w-px h-10 bg-white/10"></div>
-              <div className="flex flex-col">
+              <div className="flex flex-col text-left">
                 <span className="text-white text-2xl font-black">99.9%</span>
                 <span className="text-blue-200/50 text-[10px] font-black uppercase tracking-widest">SLA Uptime</span>
               </div>
@@ -106,13 +141,13 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
         </div>
 
         {/* 右侧：登录/注册表单区 */}
-        <div className="w-full lg:w-1/2 p-12 lg:p-20 flex flex-col justify-center bg-slate-900/40">
+        <div className="w-full lg:w-1/2 p-12 lg:p-20 flex flex-col justify-center bg-slate-900/40 text-left">
           <div className="mb-12">
             <h3 className="text-3xl font-black text-white tracking-tight uppercase italic mb-2">
               {mode === 'login' ? '员工身份验证' : '新员工工号注册'}
             </h3>
             <p className="text-slate-400 text-sm font-medium">
-              {mode === 'login' ? '请使用您的企业工号凭证登录系统' : '完成企业信息核验后开启 AI 办公体验'}
+              {mode === 'login' ? '请使用您的企业工号凭证登录系统 (测试孙经理请用 gt4)' : '完成企业信息核验后开启 AI 办公体验'}
             </p>
           </div>
 
@@ -124,9 +159,10 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                   <Fingerprint className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" size={20} />
                   <input 
                     required
+                    autoFocus
                     value={formData.id}
                     onChange={e => setFormData({...formData, id: e.target.value})}
-                    placeholder="例如: SGCC-8821" 
+                    placeholder="输入工号，如: gt4" 
                     className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-blue-500 focus:bg-white/10 transition-all font-mono font-bold"
                   />
                 </div>
@@ -223,7 +259,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       {/* 底部版权 */}
       <div className="fixed bottom-8 left-0 w-full text-center pointer-events-none">
         <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.5em]">
-          Powered by GridGPT Engine &bull; System Vers v2.5.4
+          Powered by GridGPT Engine & bull; System Vers v2.5.4
         </p>
       </div>
 

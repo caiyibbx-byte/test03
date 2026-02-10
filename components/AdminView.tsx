@@ -22,15 +22,15 @@ import {
 } from 'lucide-react';
 import { StaffUser, UserRole, PermissionType } from '../types';
 
-// 1. 预定义原子权限元数据
+// 1. 定义最新的业务权限元数据
 const PERMISSION_METADATA: Record<PermissionType, { label: string; desc: string; color: string }> = {
-  'DATA_VIEW': { label: '招标数据查看', desc: '允许查看全网抓取的招标公告及分包详情', color: 'text-blue-600' },
-  'BID_DRAFT': { label: '投标文书编撰', desc: '允许进入编撰大厅，使用 AI 协作生成文档', color: 'text-emerald-600' },
-  'CRAWLER_CTRL': { label: '爬虫策略控制', desc: '允许修改采集频率、添加新的电力招标源', color: 'text-amber-600' },
-  'ASSET_MANAGE': { label: '企业资产维护', desc: '允许更新业绩库、人员资质及项目案例', color: 'text-purple-600' },
-  'SYSTEM_LOG': { label: '审计日志查看', desc: '允许查看系统运行日志与 AI 逻辑轨迹', color: 'text-slate-600' },
-  'USER_ADMIN': { label: '超级管理权限', desc: '拥有管理员工账号、角色及系统配置的权限', color: 'text-red-600' },
-  'AI_TUNING': { label: '智能体调优', desc: '允许修改 GridGPT 核心推理深度与行业参数', color: 'text-indigo-600' },
+  'BID_EXP_SELECT': { label: '标书业绩遴选', desc: '允许进入编撰大厅，执行企业历史业绩的筛选与关联', color: 'text-blue-600' },
+  'BID_MEMBER_DRAFT': { label: '成员拟定', desc: '允许在编撰大厅拟定并锁定项目实施团队成员名单', color: 'text-emerald-600' },
+  'BID_TECH_DRAFT': { label: '技术方案编撰', desc: '允许调用 AI 引擎生成并修正技术响应章节内容', color: 'text-indigo-600' },
+  'BID_SUBMISSION': { label: '投标', desc: '允许进行最终的标书上传确认与投标完成状态标记', color: 'text-amber-600' },
+  'BID_PLAN_MANAGE': { label: '投标计划管理', desc: '允许在计划视图中分配项目各环节负责人及调整进度', color: 'text-red-600' },
+  'DATA_VIEW': { label: '数据查看', desc: '允许查看全网招标库及人员/业绩库的基础信息', color: 'text-slate-600' },
+  'SYSTEM_LOG': { label: '系统日志', desc: '审计系统运行足迹与 AI 计算日志', color: 'text-slate-400' },
 };
 
 const AdminView: React.FC = () => {
@@ -39,18 +39,33 @@ const AdminView: React.FC = () => {
   const [showAddRole, setShowAddRole] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 2. 模拟角色数据
+  // 2. 更新模拟角色数据以匹配新权限
   const [roles, setRoles] = useState<UserRole[]>([
-    { id: 'r1', name: '系统指挥官', description: '拥有电网智能系统所有模块的绝对控制权', permissions: ['DATA_VIEW', 'BID_DRAFT', 'CRAWLER_CTRL', 'ASSET_MANAGE', 'SYSTEM_LOG', 'USER_ADMIN', 'AI_TUNING'] },
-    { id: 'r2', name: '项目负责人', description: '主导投标项目，管理团队资质与业绩匹配', permissions: ['DATA_VIEW', 'BID_DRAFT', 'ASSET_MANAGE'] },
-    { id: 'r3', name: '数智维护员', description: '负责爬虫脚本维护与 AI 智能体运行调优', permissions: ['CRAWLER_CTRL', 'SYSTEM_LOG', 'AI_TUNING'] },
+    { 
+        id: 'r1', 
+        name: '数字化指挥官', 
+        description: '拥有系统所有模块的绝对管理权与监管权', 
+        permissions: ['BID_EXP_SELECT', 'BID_MEMBER_DRAFT', 'BID_TECH_DRAFT', 'BID_SUBMISSION', 'BID_PLAN_MANAGE', 'DATA_VIEW', 'SYSTEM_LOG'] 
+    },
+    { 
+        id: 'r2', 
+        name: '商务经理', 
+        description: '主要负责业绩匹配、人员拟定及最终投标上传', 
+        permissions: ['BID_EXP_SELECT', 'BID_MEMBER_DRAFT', 'BID_SUBMISSION', 'DATA_VIEW'] 
+    },
+    { 
+        id: 'r3', 
+        name: '技术专家', 
+        description: '核心负责技术部分的文书编撰与响应生成', 
+        permissions: ['BID_TECH_DRAFT', 'DATA_VIEW'] 
+    },
   ]);
 
   // 3. 模拟员工数据
   const [users, setUsers] = useState<StaffUser[]>([
-    { id: 'S-202401', name: '张工', dept: '数字化部', roleId: 'r1', status: 'active', lastLogin: '2024-10-25 10:20' },
-    { id: 'S-202412', name: '李经理', dept: '市场拓展部', roleId: 'r2', status: 'active', lastLogin: '2024-10-25 09:45' },
-    { id: 'S-202433', name: '王专员', dept: '运维保障中心', roleId: 'r3', status: 'active', lastLogin: '2024-10-24 16:40' },
+    { id: 'ADMIN-001', name: '系统管理员', dept: '数字化中心', roleId: 'r1', status: 'active', lastLogin: '2024-10-25 10:20' },
+    { id: 'gt4', name: '孙经理', dept: '商务部', roleId: 'r2', status: 'active', lastLogin: '2024-10-25 09:45' },
+    { id: 'm2', name: '李专家', dept: '技术中心', roleId: 'r3', status: 'active', lastLogin: '2024-10-24 16:40' },
   ]);
 
   // 表单状态
@@ -59,14 +74,12 @@ const AdminView: React.FC = () => {
     name: '', description: '', permissions: [] 
   });
 
-  // 统计每个角色的员工人数
   const roleUsage = useMemo(() => {
     const counts: Record<string, number> = {};
     users.forEach(u => counts[u.roleId] = (counts[u.roleId] || 0) + 1);
     return counts;
   }, [users]);
 
-  // 处理添加逻辑
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUser.id || !newUser.name) return;
@@ -104,7 +117,7 @@ const AdminView: React.FC = () => {
           <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center">
             <Shield size={28} className="mr-3 text-blue-600" /> 企业权限治理中心 (IAM)
           </h2>
-          <p className="text-slate-500 text-sm mt-1 font-medium">基于工号体系的角色访问控制，保障电网业务数据资产安全。</p>
+          <p className="text-slate-500 text-sm mt-1 font-medium italic">基于工号体系的角色访问控制，保障电网业务环节权责对等。</p>
         </div>
         <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200">
           <button 
@@ -132,7 +145,7 @@ const AdminView: React.FC = () => {
                 placeholder="搜索员工姓名、工号或部门..." 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-bold shadow-inner"
+                className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl outline-none transition-all text-sm font-bold shadow-inner"
               />
             </div>
             <button 
@@ -180,17 +193,17 @@ const AdminView: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-8 py-4">
-                      <span className="flex items-center text-[10px] font-black uppercase tracking-widest text-emerald-500">
+                      <span className="flex items-center text-[10px] font-black uppercase tracking-widest text-emerald-500 italic">
                         <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
                         在线活跃
                       </span>
                     </td>
                     <td className="px-8 py-4 text-right">
                       <div className="flex items-center justify-end space-x-2">
-                        <button className="p-2 text-slate-300 hover:text-blue-600 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100" title="调整角色">
+                        <button className="p-2 text-slate-300 hover:text-blue-600 rounded-xl transition-all border border-transparent hover:border-slate-100" title="调整角色">
                            <ArrowRightLeft size={16} />
                         </button>
-                        <button className="p-2 text-slate-300 hover:text-red-500 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100">
+                        <button className="p-2 text-slate-300 hover:text-red-500 rounded-xl transition-all border border-transparent hover:border-slate-100">
                            <Trash2 size={16} />
                         </button>
                       </div>
@@ -202,9 +215,9 @@ const AdminView: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
           {roles.map(role => (
-            <div key={role.id} className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm flex flex-col hover:border-blue-500 hover:shadow-2xl transition-all group relative text-left">
+            <div key={role.id} className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm flex flex-col hover:border-blue-500 hover:shadow-2xl transition-all group relative">
               <div className="absolute top-8 right-8 text-slate-100 group-hover:text-blue-500/10 transition-colors pointer-events-none">
                 <Lock size={80} strokeWidth={1.5} />
               </div>
@@ -217,8 +230,8 @@ const AdminView: React.FC = () => {
               </div>
               
               <div className="flex-1 space-y-3 mb-8">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">包含的业务权限 (Permissions)</p>
-                <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">授予的业务权限 (Grants)</p>
+                <div className="space-y-2.5">
                   {role.permissions.map(p => (
                     <div key={p} className="flex items-center text-[11px] font-black text-slate-700 uppercase tracking-tight italic">
                        <Check size={14} className="mr-2 text-emerald-500" strokeWidth={4} /> {PERMISSION_METADATA[p].label}
@@ -229,7 +242,7 @@ const AdminView: React.FC = () => {
 
               <div className="pt-6 border-t border-slate-50 flex space-x-3">
                  <button className="flex-1 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200">
-                   修改权限组合
+                   管理权限组合
                  </button>
                  <button className="p-4 bg-slate-50 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all border border-slate-100">
                    <Trash2 size={18} />
@@ -238,7 +251,6 @@ const AdminView: React.FC = () => {
             </div>
           ))}
 
-          {/* 创建角色卡片 */}
           <button 
             onClick={() => setShowAddRole(true)}
             className="rounded-[40px] border-4 border-dashed border-slate-100 p-8 flex flex-col items-center justify-center text-slate-300 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all group min-h-[420px]"
@@ -246,144 +258,87 @@ const AdminView: React.FC = () => {
             <div className="w-20 h-20 rounded-[28px] border-4 border-dashed border-current flex items-center justify-center mb-6 group-hover:rotate-90 transition-transform duration-500">
               <Plus size={40} />
             </div>
-            <p className="text-sm font-black uppercase tracking-widest italic">定义新业务角色</p>
-            <p className="text-[10px] mt-2 opacity-60 font-bold uppercase tracking-widest">Orchestrate new permission set</p>
+            <p className="text-sm font-black uppercase tracking-widest italic">编排新业务角色</p>
           </button>
         </div>
       )}
 
-      {/* 1. 员工录入模态框 */}
+      {/* 员工录入模态框 (保持基本不变，但展示权限一致性) */}
       {showAddUser && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-8">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-8 text-left">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowAddUser(false)} />
           <div className="relative w-full max-w-xl bg-white rounded-[48px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-             <div className="p-10 border-b border-slate-100 flex items-center justify-between text-left">
+             <div className="p-10 border-b border-slate-100 flex items-center justify-between">
                <div>
                   <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">员工实名录入</h3>
-                  <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-widest italic">Employee Registration Process</p>
+                  <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-widest italic">Employee Registration Factory</p>
                </div>
-               <button onClick={() => setShowAddUser(false)} className="p-3 hover:bg-slate-50 rounded-full text-slate-400 transition-colors"><X size={24}/></button>
+               <button onClick={() => setShowAddUser(false)} className="p-3 hover:bg-slate-50 rounded-full text-slate-400"><X size={24}/></button>
              </div>
-             <form onSubmit={handleAddUser} className="p-10 space-y-8 text-left">
+             <form onSubmit={handleAddUser} className="p-10 space-y-8">
                 <div className="space-y-6">
                    <div className="group">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">企业唯一工号 (Staff ID)</label>
-                      <div className="relative">
-                        <Fingerprint className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={20} />
-                        <input 
-                          required
-                          value={newUser.id}
-                          onChange={e => setNewUser({...newUser, id: e.target.value})}
-                          placeholder="例如: S-2024XX" 
-                          className="w-full pl-12 pr-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white outline-none transition-all font-mono font-bold text-lg shadow-inner"
-                        />
-                      </div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">企业工号 (Staff ID)</label>
+                      <input required value={newUser.id} onChange={e => setNewUser({...newUser, id: e.target.value})} placeholder="例如: S-1234" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 outline-none transition-all font-mono font-bold" />
                    </div>
                    <div className="grid grid-cols-2 gap-6">
-                      <div className="group">
+                      <div>
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">员工姓名</label>
-                        <input 
-                          required
-                          value={newUser.name}
-                          onChange={e => setNewUser({...newUser, name: e.target.value})}
-                          placeholder="姓名" 
-                          className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white outline-none transition-all font-bold shadow-inner"
-                        />
+                        <input required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} placeholder="姓名" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 outline-none font-bold" />
                       </div>
-                      <div className="group">
+                      <div>
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">所属部门</label>
-                        <input 
-                          value={newUser.dept}
-                          onChange={e => setNewUser({...newUser, dept: e.target.value})}
-                          placeholder="如：信通部" 
-                          className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white outline-none transition-all font-bold shadow-inner"
-                        />
+                        <input value={newUser.dept} onChange={e => setNewUser({...newUser, dept: e.target.value})} placeholder="部门" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 outline-none font-bold" />
                       </div>
                    </div>
-                   <div className="group">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">指派初始权限角色</label>
-                      <select 
-                        value={newUser.roleId}
-                        onChange={e => setNewUser({...newUser, roleId: e.target.value})}
-                        className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white outline-none transition-all font-bold appearance-none cursor-pointer shadow-inner"
-                      >
+                   <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">初始角色</label>
+                      <select value={newUser.roleId} onChange={e => setNewUser({...newUser, roleId: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 outline-none font-bold appearance-none cursor-pointer">
                          {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                       </select>
                    </div>
                 </div>
-                <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-[24px] text-xs font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center">
-                   确认录入系统并指派权限 <Plus size={18} className="ml-2" />
-                </button>
+                <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-[24px] text-xs font-black uppercase tracking-[0.2em] shadow-2xl hover:bg-blue-700 transition-all flex items-center justify-center">确认录入系统 <Plus size={18} className="ml-2" /></button>
              </form>
           </div>
         </div>
       )}
 
-      {/* 2. 角色自定义模态框 */}
+      {/* 角色自定义模态框 */}
       {showAddRole && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-8">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-8 text-left">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowAddRole(false)} />
           <div className="relative w-full max-w-4xl bg-white rounded-[48px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-             <div className="p-10 border-b border-slate-100 flex items-center justify-between text-left shrink-0">
+             <div className="p-10 border-b border-slate-100 flex items-center justify-between shrink-0">
                <div>
                   <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">自定义角色权限编排</h3>
                   <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-widest italic">Role Composition Factory</p>
                </div>
-               <button onClick={() => setShowAddRole(false)} className="p-3 hover:bg-slate-50 rounded-full text-slate-400 transition-colors"><X size={24}/></button>
+               <button onClick={() => setShowAddRole(false)} className="p-3 hover:bg-slate-50 rounded-full text-slate-400"><X size={24}/></button>
              </div>
              
-             <form onSubmit={handleAddRole} className="flex-1 overflow-y-auto p-10 space-y-12 custom-scrollbar-main text-left">
+             <form onSubmit={handleAddRole} className="flex-1 overflow-y-auto p-10 space-y-12 custom-scrollbar-main">
                 <div className="grid grid-cols-5 gap-10">
                    <div className="col-span-2 space-y-6">
                       <div className="group">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">角色名称 (Role Label)</label>
-                        <input 
-                          required
-                          value={newRole.name}
-                          onChange={e => setNewRole({...newRole, name: e.target.value})}
-                          placeholder="例如: 商务审计员"
-                          className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white outline-none transition-all font-black text-lg shadow-inner"
-                        />
+                        <input required value={newRole.name} onChange={e => setNewRole({...newRole, name: e.target.value})} placeholder="例如: 商务审计员" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 outline-none transition-all font-black text-lg" />
                       </div>
                       <div className="group">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">角色职责描述</label>
-                        <textarea 
-                          rows={4}
-                          value={newRole.description}
-                          onChange={e => setNewRole({...newRole, description: e.target.value})}
-                          placeholder="详细描述该角色的业务应用场景..."
-                          className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white outline-none transition-all text-sm font-bold shadow-inner resize-none italic"
-                        />
-                      </div>
-                      <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100">
-                         <div className="flex items-center text-amber-600 text-[10px] font-black uppercase tracking-widest mb-2">
-                           <ShieldAlert size={14} className="mr-2" /> 安全准则
-                         </div>
-                         <p className="text-[11px] text-slate-600 leading-relaxed font-bold italic">
-                           请遵循最小特权原则 (POLP)。每个自定义角色应仅包含其完成业务流程所必需的原子权限。
-                         </p>
+                        <textarea rows={4} value={newRole.description} onChange={e => setNewRole({...newRole, description: e.target.value})} placeholder="描述该角色的业务应用场景..." className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 outline-none transition-all text-sm font-bold shadow-inner resize-none italic" />
                       </div>
                    </div>
                    
                    <div className="col-span-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block">自由勾选原子权限 (Multiple Select Permissions)</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block">自由勾选业务原子权限 (Core Permissions)</label>
                       <div className="grid grid-cols-1 gap-3">
                          {(Object.keys(PERMISSION_METADATA) as PermissionType[]).map(key => {
                            const isSelected = newRole.permissions.includes(key);
                            return (
-                             <div 
-                               key={key}
-                               onClick={() => togglePermission(key)}
-                               className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between group ${
-                                 isSelected ? 'border-blue-600 bg-blue-50/50 shadow-lg' : 'border-slate-50 hover:border-slate-200 bg-slate-50/50'
-                               }`}
-                             >
+                             <div key={key} onClick={() => togglePermission(key)} className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${isSelected ? 'border-blue-600 bg-blue-50/50 shadow-lg' : 'border-slate-50 hover:border-slate-200 bg-slate-50/50'}`}>
                                 <div className="flex items-center">
-                                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-4 transition-all ${
-                                     isSelected ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-200 text-slate-400'
-                                   }`}>
-                                     {isSelected ? <Check size={20} strokeWidth={4} /> : <Zap size={18} />}
-                                   </div>
+                                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-4 transition-all ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'}`}>{isSelected ? <Check size={20} strokeWidth={4} /> : <Zap size={18} />}</div>
                                    <div className="text-left">
                                      <p className={`text-xs font-black uppercase tracking-tight italic ${isSelected ? 'text-blue-700' : 'text-slate-600'}`}>{PERMISSION_METADATA[key].label}</p>
                                      <p className="text-[10px] text-slate-400 mt-0.5 font-bold italic">{PERMISSION_METADATA[key].desc}</p>
@@ -395,11 +350,8 @@ const AdminView: React.FC = () => {
                       </div>
                    </div>
                 </div>
-
                 <div className="pt-10 border-t border-slate-100 shrink-0">
-                  <button type="submit" className="w-full py-5 bg-slate-900 text-white rounded-[24px] text-xs font-black uppercase tracking-[0.2em] shadow-2xl shadow-slate-200 hover:bg-black transition-all flex items-center justify-center">
-                     发布并生效新业务角色 <Settings2 size={18} className="ml-3" />
-                  </button>
+                  <button type="submit" className="w-full py-5 bg-slate-900 text-white rounded-[24px] text-xs font-black uppercase tracking-[0.2em] shadow-2xl hover:bg-black transition-all flex items-center justify-center">发布并生效新业务角色 <Settings2 size={18} className="ml-3" /></button>
                 </div>
              </form>
           </div>
