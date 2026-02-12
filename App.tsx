@@ -92,7 +92,6 @@ const App: React.FC = () => {
         { id: AppView.CRAWLER, label: '招标抓取解析', icon: Search },
         { id: AppView.AI_SELECTOR, label: '智能投标筛选', icon: Target },
         { id: AppView.BID_PLAN, label: '投标计划管理', icon: CalendarDays },
-        { id: AppView.BID_WORKSPACE, label: '智能文书编撰', icon: FileText },
       ]
     },
     {
@@ -143,7 +142,7 @@ const App: React.FC = () => {
       source: 'crawler',
       assignDate: '2024-10-16',
       lotName: '包1：10kV柱上变压器',
-      progress: 65,
+      progress: 95,
       currentStage: 'drafting',
       projectLeader: { id: 'ADMIN-001', name: '系统管理员', role: '资深项目总监', score: 98, years: 15, majorProject: '国网浙江500kV站改', tags: ['商务', '高压资质'] },
       expSelectionLeader: { id: 'gt4', name: '孙经理', role: '商务总监', years: 14, majorProject: '物资集采', tags: ['商务'] },
@@ -152,7 +151,7 @@ const App: React.FC = () => {
       submissionLeader: { id: 'gt6', name: '陈工', role: '商务助理', years: 5, majorProject: '投标上传', tags: ['商务'] },
       isExpDone: true,
       isTeamDone: true,
-      isContentDone: false
+      isContentDone: true // 默认设为 true，方便测试提交流转
     },
     {
       id: 'plan-002_lot_1',
@@ -187,16 +186,17 @@ const App: React.FC = () => {
   const addToPlan = (tender: any, source: 'crawler' | 'ai' = 'crawler') => {
     if (plannedTasks.find(t => t.id === tender.id)) return;
     const newTask: BiddingTask = { ...tender, priority: 'medium', source, progress: 10, currentStage: 'scanned', isExpDone: false, isTeamDone: false, isContentDone: false };
-    setPlannedTasks([...plannedTasks, newTask]);
+    setPlannedTasks(prev => [...prev, newTask]);
   };
 
   const removeFromPlan = (id: string) => {
-    setPlannedTasks(plannedTasks.filter(t => t.id !== id));
+    setPlannedTasks(prev => prev.filter(t => t.id !== id));
     if (selectedTaskId === id) setSelectedTaskId(null);
   };
 
   const updateTask = (updatedTask: BiddingTask) => {
-    setPlannedTasks(plannedTasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+    // 使用函数式更新确保状态一致性
+    setPlannedTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
   };
 
   const handleEnterWorkspace = (taskId: string) => {

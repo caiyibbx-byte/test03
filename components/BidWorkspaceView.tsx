@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Users, Award, FileText, ChevronRight, BrainCircuit, 
@@ -61,7 +60,8 @@ import {
   Maximize2,
   FileArchive,
   FileCheck,
-  Layout
+  Layout,
+  Star
 } from 'lucide-react';
 import { BiddingTask, StaffUser, Personnel, ProjectExperience } from '../types';
 
@@ -89,7 +89,7 @@ interface ReferenceFile {
 }
 
 // --------------------------------------------------------------------------------
-// 极致 Word 仿真组件：项目业绩全案 (A4 布局) - 严格对齐库标准
+// 极致 Word 仿真组件：项目业绩全案 (A4 布局)
 // --------------------------------------------------------------------------------
 const ProjectFullDocumentMerged: React.FC<{ project: ProjectExperience }> = ({ project }) => (
   <div className="flex flex-col items-center space-y-16 mb-40 animate-in fade-in duration-700">
@@ -132,10 +132,16 @@ const ProjectFullDocumentMerged: React.FC<{ project: ProjectExperience }> = ({ p
 // --------------------------------------------------------------------------------
 // 人员资历仿真组件 (A4 布局)
 // --------------------------------------------------------------------------------
-const PersonnelFullDocumentMerged: React.FC<{ person: Personnel }> = ({ person }) => (
+const PersonnelFullDocumentMerged: React.FC<{ person: Personnel; isLeader?: boolean }> = ({ person, isLeader }) => (
   <div className="flex flex-col items-center space-y-16 mb-40 animate-in fade-in duration-700">
     <div className="relative bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] text-left font-serif p-[20mm] flex flex-col shrink-0" style={{ width: '210mm', minHeight: '297mm', border: '1px solid #e2e8f0' }}>
       <div className="absolute top-10 right-10 px-4 py-1 border border-slate-300 text-[8pt] text-slate-300 uppercase">Registry Personnel Form V3.1</div>
+      {isLeader && (
+        <div className="absolute top-10 left-10 text-blue-600 flex items-center space-x-2 animate-pulse">
+          <Star size={18} fill="currentColor" />
+          <span className="text-[10pt] font-black uppercase tracking-widest font-sans italic">Project Leader</span>
+        </div>
+      )}
       <h2 className="text-[18pt] font-black text-center mb-10 tracking-[6pt] underline underline-offset-[12px] decoration-slate-900">拟任本项目主要人员简历表</h2>
       <table className="w-full border-collapse border-[1.5pt] border-black text-[10.5pt] leading-[1.8]">
         <tbody>
@@ -170,7 +176,7 @@ const PersonnelFullDocumentMerged: React.FC<{ person: Personnel }> = ({ person }
             </td>
           </tr>
           <tr>
-            <td className="border border-black p-2 bg-slate-100 font-bold text-center uppercase tracking-[4pt]" colSpan={6}>主 要 工 作 经 历</td>
+            <td className="border border-black p-2 bg-slate-100 font-bold text-center uppercase tracking-[4pt]" colSpan={6}>主 要 工 正 经 历</td>
           </tr>
           <tr className="bg-slate-50 text-[9.5pt] font-bold">
             <td className="border border-black p-2 text-center">时间周期</td>
@@ -249,8 +255,8 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
   // 全量模拟数据
   const fullPersonnelPool: Personnel[] = [
     { id: 's-huang', name: '黄石亮', age: 40, education: '本科', title: '高级顾问', proposedPosition: '咨询顾问', years: 17, similarYears: 15, school: '中山大学', major: '计算机', gradDate: '2013', currentLoad: 0.6, educations: [{ level: '本科', school: '中山大学', major: '计算机', gradDate: '2013', gradCertUrl: 'https://placehold.co/800x600?text=Grad+Cert', degreeCertUrl: 'https://placehold.co/800x600?text=Degree+Cert' }], certs: [{ name: 'PMP证书', level: '高级', authority: 'PMI', number: 'PMP-123', validity: '2027', fileUrl: 'https://placehold.co/600x800?text=PMP+Cert' }], projects: [{ time: '2022', projectName: '南网科技成果转化咨询', role: '负责人', client: '南网', contact: '游X', phone: '156...', serviceType: '咨询' }] },
-    { id: 's-zhang-wei', name: '张维国', age: 45, education: '博士', title: '教授级高工', proposedPosition: '技术总监', years: 22, similarYears: 18, school: '清华大学', major: '电力自动化', gradDate: '2008', currentLoad: 0.4, educations: [{ level: '博士', school: '清华大学', major: '电力系统及其自动化', gradDate: '2008', gradCertUrl: 'https://placehold.co/800x600?text=Tsinghua+PhD+Grad' }], certs: [{ name: '注册电气工程师', level: '执业', authority: '人社', number: 'DG-001', validity: '2028', fileUrl: 'https://placehold.co/600x800?text=Electrical+Cert' }], projects: [{ time: '2021', projectName: '±800kV特高压运维项目', role: '总监', client: '国网', contact: '王主任', phone: '010...', serviceType: '运维' }] },
-    { id: 's-li-ming', name: '李明', age: 38, education: '硕士', title: '高级架构师', proposedPosition: '架构负责人', years: 15, similarYears: 12, school: '西安交大', major: '软件工程', gradDate: '2012', currentLoad: 0.3, educations: [{ level: '硕士', school: '西安交通大学', major: '软件工程', gradDate: '2012', gradCertUrl: 'https://placehold.co/800x600?text=XJTU+Master+Grad' }], certs: [{ name: '系统分析师', level: '高级', authority: '工信部', number: 'SA-999', validity: '永久', fileUrl: '' }], projects: [{ time: '2023', projectName: '国网新源数字化审计平台', role: '架构师', client: '新源', contact: '李工', phone: '138...', serviceType: '开发' }] }
+    { id: 's-zhang-wei', name: '张维国', age: 45, education: '博士', title: '教授级高级工程师', proposedPosition: '技术总监', years: 22, similarYears: 18, school: '清华大学', major: '电力自动化', gradDate: '2008', currentLoad: 0.4, educations: [{ level: '博士', school: '清华大学', major: '电力系统及其自动化', gradDate: '2008', gradCertUrl: 'https://placehold.co/800x600?text=Tsinghua+PhD+Grad' }], certs: [{ name: '注册电气工程师', level: '执业', authority: '人社', number: 'DG-001', validity: '2028', fileUrl: 'https://placehold.co/600x800?text=Electrical+Cert' }], projects: [{ time: '2021', projectName: '±800kV特高压运维项目', role: '总监', client: '国网', contact: '王主任', phone: '010...', serviceType: '运维' }] },
+    { id: 's-li-ming', name: '李明', age: 38, education: '硕士', title: '高级架构师', proposedPosition: '架构负责人', years: 15, similarYears: 12, school: '西安交大', major: '软件工程', gradDate: '2012', currentLoad: 0.3, educations: [{ level: '硕士', school: '西安交通大学', major: '软件工程', gradDate: '2012', gradCertUrl: 'https://placehold.co/800x600?text=XJTU+Master+Grad' }], certs: [{ name: 'AWS 解决方案架构师认证', level: '专家级', authority: 'Amazon', number: 'AWS-SA-123', validity: '2025-10', fileUrl: 'https://placehold.co/600x800?text=AWS+Arch+Cert' }, { name: '系统分析师', level: '高级', authority: '工信部', number: 'SA-999', validity: '永久', fileUrl: '' }], projects: [{ time: '2023', projectName: '国网新源数字化审计平台', role: '架构师', client: '新源', contact: '李工', phone: '138...', serviceType: '开发' }] }
   ];
 
   const fullProjectPool: ProjectExperience[] = [
@@ -264,6 +270,9 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
   const [selectedProjects, setSelectedProjects] = useState<ProjectExperience[]>([]);
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel[]>([]);
   
+  // 新增：技术文件中的项目负责人 ID
+  const [projectLeaderId, setProjectLeaderId] = useState<string | null>(null);
+
   // 深度详情模态框状态
   const [detailPerson, setDetailPerson] = useState<Personnel | null>(null);
   const [detailProject, setDetailProject] = useState<ProjectExperience | null>(null);
@@ -305,10 +314,25 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
     }
   }, [currentTask]);
 
+  // 关键增强：为预览模式生成的已排序成员列表（负责人排在第一位）
+  const previewPersonnelList = useMemo(() => {
+    if (!projectLeaderId) return selectedPersonnel;
+    const sorted = [...selectedPersonnel].sort((a, b) => {
+      if (a.id === projectLeaderId) return -1;
+      if (b.id === projectLeaderId) return 1;
+      return 0;
+    });
+    return sorted;
+  }, [selectedPersonnel, projectLeaderId]);
+
   const markTaskCompleted = (taskId: 'team' | 'exp' | 'content') => {
     if (!getActiveCanEdit()) {
        alert("抱歉，您不是该环节的负责人，无法锁定归档。");
        return;
+    }
+    if (taskId === 'team' && selectedPersonnel.length > 0 && !projectLeaderId) {
+      alert("请在已选团队池中指定一名“项目负责人”，这将决定标书资历文件的排版顺序。");
+      return;
     }
     if (!currentTask || !onUpdateTask) return;
 
@@ -349,7 +373,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
     setReferenceFiles(prev => [...prev, ...files.map(f => ({ id: Math.random().toString(), name: f.name, size: '2MB', type: 'PDF', uploadTime: new Date().toLocaleTimeString() }))]);
     setIsFilesProcessing(true);
@@ -371,7 +395,13 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
     }, 800);
   };
 
-  const PersonnelCard = ({ person, isRecommended = false, reason = '', score = 0 }: { person: Personnel, isRecommended?: boolean, reason?: string, score?: number }) => (
+  // Fix: Use React.FC to allow 'key' prop in JSX when rendering lists
+  const PersonnelCard: React.FC<{
+    person: Personnel;
+    isRecommended?: boolean;
+    reason?: string;
+    score?: number;
+  }> = ({ person, isRecommended = false, reason = '', score = 0 }) => (
     <div className={`p-6 rounded-[32px] border-2 transition-all relative overflow-hidden group animate-in slide-in-from-left text-left ${isRecommended ? 'bg-indigo-50/20 border-indigo-100 shadow-sm' : 'bg-white border-slate-100 hover:border-indigo-300'}`}>
       {isRecommended && <div className="absolute top-0 right-0 px-6 py-1.5 bg-indigo-600 text-white text-[9px] font-black italic tracking-widest shadow-lg">匹配 {score}%</div>}
       <div className="flex items-start space-x-5 mb-5 text-left">
@@ -414,7 +444,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
               <div className="px-6 border-r border-white/10 text-white font-black text-[10px] uppercase tracking-widest italic flex items-center"><ShieldCheck size={16} className="text-indigo-400 mr-2" /> 专家详细资历档案</div>
               <button onClick={() => setDetailPerson(null)} className="flex items-center px-8 py-2.5 bg-slate-100 text-slate-900 hover:bg-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">关闭预览</button>
            </div>
-           <div className="mt-16 flex flex-col items-center"><PersonnelFullDocumentMerged person={detailPerson} /></div>
+           <div className="mt-16 flex flex-col items-center"><PersonnelFullDocumentMerged person={detailPerson} isLeader={detailPerson.id === projectLeaderId} /></div>
         </div>
       )}
       {detailProject && (
@@ -427,15 +457,30 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
         </div>
       )}
 
-      <header className="bg-white px-10 py-5 rounded-[28px] border border-slate-200 shadow-sm flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-6 text-left">
-          <div className="p-3 rounded-2xl bg-slate-900 text-white shadow-lg"><Layers size={24} /></div>
-          <div>
-            <h3 className="text-sm font-black text-slate-900 uppercase italic leading-none">Bidding Authoring Workshop V3.1</h3>
-            <p className="text-[10px] text-slate-400 font-bold uppercase mt-1.5 tracking-widest italic">Intelligent collaborative workspace</p>
+      <header className="bg-white px-10 py-6 rounded-[28px] border border-slate-200 shadow-sm flex items-center justify-between shrink-0">
+        <div className="flex items-center space-x-8 text-left min-w-0 flex-1">
+          <div className="p-3.5 rounded-2xl bg-slate-900 text-white shadow-lg shrink-0"><Layers size={26} /></div>
+          <div className="min-w-0">
+            <div className="flex items-center space-x-3 mb-2">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] italic leading-none">Bidding Authoring Workshop V3.1</h3>
+              <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black rounded border border-blue-100 uppercase italic">Active Engine</span>
+            </div>
+            <div className="flex items-center space-x-4 min-w-0">
+               <h2 className="text-xl font-black text-slate-900 truncate tracking-tight leading-none uppercase italic" title={currentTask?.title}>
+                 {currentTask?.title || "未选择投标项目"}
+               </h2>
+               {currentTask?.lotName && (
+                 <>
+                   <ChevronRight size={20} className="text-slate-300 shrink-0" />
+                   <h2 className="text-xl font-bold text-blue-600 truncate italic tracking-tighter leading-none shrink-0">
+                     {currentTask.lotName}
+                   </h2>
+                 </>
+               )}
+            </div>
           </div>
         </div>
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-6 shrink-0 ml-10">
            {phase !== 'hub' && (
              <div className={`flex items-center px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest italic ${getActiveCanEdit() ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
                 {getActiveCanEdit() ? <><UnlockKeyhole size={14} className="mr-2"/> 编辑授权模式</> : <><LockKeyhole size={14} className="mr-2"/> 只读监控模式</>}
@@ -464,7 +509,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
           </div>
         )}
 
-        {/* 成员拟定环节 (恢复) */}
+        {/* 成员拟定环节 */}
         {phase === 'task' && activeTaskId === 'team' && (
           <div className="flex-1 flex flex-col bg-white rounded-[48px] border border-slate-200 overflow-hidden shadow-2xl animate-in slide-in-from-right-12 duration-500 text-left">
              <div className="px-12 py-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between shrink-0 text-left">
@@ -492,23 +537,65 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                       <div className="grid grid-cols-2 gap-4">{fullPersonnelPool.filter(p => p.name.includes(personnelSearch)).map(p => <PersonnelCard key={p.id} person={p} />)}</div>
                    </section>
                 </div>
-                <div className="w-[380px] bg-slate-950 flex flex-col p-8 text-left shrink-0">
-                   <div className="flex items-center justify-between mb-10 text-white italic text-left"><div className="flex items-center italic"><UserPlus2 size={20} className="text-indigo-400 mr-3" /><h4 className="text-sm font-black uppercase tracking-tighter">标书拟定团队池</h4></div><span className="text-slate-500 text-[10px] font-black italic tracking-widest">{selectedPersonnel.length} / 12 人</span></div>
+                <div className="w-[420px] bg-slate-950 flex flex-col p-8 text-left shrink-0">
+                   <div className="flex items-center justify-between mb-10 text-white italic text-left">
+                      <div className="flex items-center italic">
+                        <UserPlus2 size={20} className="text-indigo-400 mr-3" />
+                        <h4 className="text-sm font-black uppercase tracking-tighter">标书拟定团队池</h4>
+                      </div>
+                      <span className="text-slate-500 text-[10px] font-black italic tracking-widest">{selectedPersonnel.length} / 12 人</span>
+                   </div>
                    <div className="flex-1 space-y-4 overflow-y-auto custom-scrollbar-dark pr-2 text-left">
-                      {selectedPersonnel.map((p, idx) => (
-                        <div key={idx} className="p-4 bg-white/5 border border-white/5 rounded-[24px] flex items-center justify-between group text-white text-left animate-in slide-in-from-bottom-4">
-                           <div className="flex items-center space-x-4 min-w-0 flex-1 text-left"><div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black text-xs shrink-0 shadow-lg">{idx + 1}</div><div className="text-left min-w-0"><p className="text-sm font-black italic truncate">{p.name}</p><p className="text-[9px] text-slate-500 font-bold uppercase mt-1 italic truncate">{p.proposedPosition}</p></div></div>
-                           <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => setDetailPerson(p)} className="p-2 text-slate-400 hover:text-white"><Maximize2 size={14}/></button>{canEditTeam && <button onClick={() => setSelectedPersonnel(selectedPersonnel.filter((_, i) => i !== idx))} className="p-2 text-slate-600 hover:text-red-400 transition-all"><Trash2 size={16} /></button>}</div>
-                        </div>
-                      ))}
+                      {selectedPersonnel.map((p, idx) => {
+                        const isLeader = p.id === projectLeaderId;
+                        return (
+                          <div key={idx} className={`p-5 border transition-all rounded-[32px] flex items-center justify-between group text-white text-left animate-in slide-in-from-bottom-4 ${isLeader ? 'bg-indigo-600/20 border-indigo-500/50 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'bg-white/5 border-white/5'}`}>
+                             <div className="flex items-center space-x-4 min-w-0 flex-1 text-left">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 shadow-lg transition-colors ${isLeader ? 'bg-indigo-600 text-white ring-4 ring-indigo-600/20' : 'bg-slate-800 text-slate-400'}`}>
+                                  {isLeader ? <Medal size={20} /> : idx + 1}
+                                </div>
+                                <div className="text-left min-w-0">
+                                   <div className="flex items-center space-x-2">
+                                      <p className="text-base font-black italic truncate">{p.name}</p>
+                                      {isLeader && <span className="px-2 py-0.5 bg-indigo-600 text-[8px] font-black uppercase rounded italic tracking-widest">负责人</span>}
+                                   </div>
+                                   <p className="text-[10px] text-slate-500 font-bold uppercase mt-1 italic truncate">{p.proposedPosition}</p>
+                                </div>
+                             </div>
+                             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {canEditTeam && (
+                                  <button 
+                                    onClick={() => setProjectLeaderId(isLeader ? null : p.id)} 
+                                    className={`p-2 rounded-lg transition-all ${isLeader ? 'text-blue-400 bg-blue-400/10' : 'text-slate-500 hover:text-blue-400 hover:bg-white/5'}`}
+                                    title={isLeader ? "取消负责人身份" : "设为项目负责人"}
+                                  >
+                                    <Star size={16} fill={isLeader ? "currentColor" : "none"} />
+                                  </button>
+                                )}
+                                <button onClick={() => setDetailPerson(p)} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-all"><Maximize2 size={16}/></button>
+                                {canEditTeam && <button onClick={() => { setSelectedPersonnel(selectedPersonnel.filter((_, i) => i !== idx)); if(isLeader) setProjectLeaderId(null); }} className="p-2 text-slate-600 hover:text-red-400 transition-all rounded-lg hover:bg-white/5"><Trash2 size={18} /></button>}
+                             </div>
+                          </div>
+                        );
+                      })}
                       {selectedPersonnel.length === 0 && (<div className="h-full flex flex-col items-center justify-center text-slate-700 opacity-30 border-2 border-dashed border-white/5 rounded-[40px]"><UserSearch size={48} strokeWidth={1} /><p className="text-[10px] font-black uppercase tracking-[0.3em] mt-6 italic">Personnel Pool Empty</p></div>)}
                    </div>
+                   {projectLeaderId && (
+                     <div className="mt-6 p-4 bg-indigo-600/10 border border-indigo-600/20 rounded-2xl animate-in fade-in slide-in-from-bottom-2">
+                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center italic">
+                           <CheckCircle2 size={12} className="mr-2" /> 预览优化已就绪
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                          负责人 <span className="text-white font-bold">{selectedPersonnel.find(p => p.id === projectLeaderId)?.name}</span> 的资历将自动排在标书文件的首页。
+                        </p>
+                     </div>
+                   )}
                 </div>
              </div>
           </div>
         )}
 
-        {/* 业绩遴选环节 (深度修改) */}
+        {/* 业绩遴选环节 */}
         {phase === 'task' && activeTaskId === 'exp' && (
           <div className="flex-1 flex flex-col bg-white rounded-[48px] border border-slate-200 overflow-hidden shadow-2xl animate-in slide-in-from-right-12 duration-500 text-left">
              <div className="px-12 py-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between shrink-0 text-left">
@@ -563,7 +650,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
           </div>
         )}
 
-        {/* 技术方案编撰环节 (恢复) */}
+        {/* 技术方案编撰环节 */}
         {phase === 'task' && activeTaskId === 'content' && (
           <div className="flex-1 flex flex-col bg-white rounded-[48px] border border-slate-200 overflow-hidden shadow-2xl animate-in slide-in-from-right-12 duration-500 text-left">
              <div className="px-12 py-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between shrink-0 text-left">
@@ -620,17 +707,29 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                       <span className="px-8 text-sm font-black w-24 text-center tracking-tighter">{zoomLevel}%</span>
                       <button onClick={() => setZoomLevel(Math.min(200, zoomLevel + 10))} className="p-3 text-slate-500 hover:text-white transition-colors hover:bg-slate-700 rounded-xl italic font-black uppercase tracking-tighter">放大</button>
                    </div>
-                   <span className="text-xs font-bold text-emerald-400 flex items-center uppercase tracking-widest text-left">
-                     <BadgeCheck size={18} className="mr-3" /> {phase === 'exp_preview' ? '标书项目业绩全案 1:1 仿真预览 (对齐 Word 标准)' : '拟任人员资历全案 1:1 仿真预览'}
-                   </span>
+                   <div className="flex flex-col text-left">
+                      <span className="text-xs font-bold text-emerald-400 flex items-center uppercase tracking-widest">
+                        <BadgeCheck size={18} className="mr-3" /> {phase === 'exp_preview' ? '标书项目业绩全案 1:1 仿真预览 (对齐 Word 标准)' : '拟任人员资历全案 1:1 仿真预览'}
+                      </span>
+                      {phase === 'team_preview' && projectLeaderId && (
+                        <span className="text-[10px] text-blue-400 font-black mt-1 uppercase tracking-widest italic animate-pulse">
+                          Auto-Sorted: 负责人 {selectedPersonnel.find(p => p.id === projectLeaderId)?.name} 已置于首页
+                        </span>
+                      )}
+                   </div>
                 </div>
-                <button onClick={() => setPhase('task')} className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-[20px] border border-white/5 transition-all text-left">返回工作台控制台</button>
+                <div className="flex space-x-4">
+                  <button className="px-8 py-4 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-[20px] shadow-lg hover:bg-blue-700 transition-all flex items-center">
+                    <Download size={16} className="mr-2" /> 下载最终生成的 Word
+                  </button>
+                  <button onClick={() => setPhase('task')} className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-[20px] border border-white/5 transition-all text-left">返回控制台</button>
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto p-24 flex flex-col items-center bg-black relative custom-scrollbar-dark scroll-smooth text-left">
                   <div className="origin-top transition-all space-y-24 text-left" style={{ transform: `scale(${zoomLevel / 100})` }}>
                     {phase === 'exp_preview' 
                       ? selectedProjects.map((p) => <ProjectFullDocumentMerged key={p.id} project={p} />) 
-                      : selectedPersonnel.map((p) => <PersonnelFullDocumentMerged key={p.id} person={p} />)}
+                      : previewPersonnelList.map((p) => <PersonnelFullDocumentMerged key={p.id} person={p} isLeader={p.id === projectLeaderId} />)}
                     {(phase === 'exp_preview' ? selectedProjects : selectedPersonnel).length === 0 && (
                       <div className="text-slate-600 italic uppercase tracking-[0.4em] mt-40 flex flex-col items-center">
                         <Layout size={64} strokeWidth={1} className="mb-6 opacity-30" />
