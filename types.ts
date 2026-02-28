@@ -70,6 +70,13 @@ export interface Tender {
   subPackages?: SubPackage[];
 }
 
+export enum PhaseStatus {
+  NOT_STARTED = '未开始',
+  IN_PROGRESS = '进行中',
+  COMPLETED = '已完成',
+  SUBMITTED = '已提交'
+}
+
 export interface BiddingTask extends Tender {
   projectLeader?: StaffMember;
   expSelectionLeader?: StaffMember;    
@@ -84,7 +91,16 @@ export interface BiddingTask extends Tender {
   progress?: number; 
   currentStage?: 'scanned' | 'team_assigned' | 'drafting' | 'reviewing' | 'submitted';
 
-  // 子环节完成状态
+  // 子环节状态
+  expStatus?: PhaseStatus;
+  teamStatus?: PhaseStatus;
+  contentStatus?: PhaseStatus;
+
+  // 最后修改信息
+  lastModifiedBy?: string;
+  lastModifiedTime?: string;
+
+  // 兼容旧代码的布尔值 (可选，建议逐步替换)
   isExpDone?: boolean;
   isTeamDone?: boolean;
   isContentDone?: boolean;

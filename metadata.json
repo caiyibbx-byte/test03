@@ -1,5 +1,5 @@
 {
-  "name": "GridBid AI - 电网智能投标原型系统",
+  "name": "2026年2月14号版本备份GridBid AI - 电网智能投标原型系统",
   "description": "一个面向电网招标项目的一站式智能投标全生命周期管理平台，涵盖自动抓取、智能分析、团队匹配与文书辅助编撰。",
   "requestFramePermissions": [
     "camera",

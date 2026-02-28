@@ -20,9 +20,27 @@ import {
   Target,
   Archive,
   AlertCircle,
-  Users
+  Users,
+  RotateCcw
 } from 'lucide-react';
-import { BiddingTask, StaffMember, StaffUser } from '../types';
+import { BiddingTask, StaffMember, StaffUser, PhaseStatus } from '../types';
+
+const StatusBadge = ({ status }: { status?: PhaseStatus }) => {
+  const config = {
+    [PhaseStatus.NOT_STARTED]: { color: 'bg-slate-100 text-slate-400 border-slate-200', label: '未开始' },
+    [PhaseStatus.IN_PROGRESS]: { color: 'bg-blue-50 text-blue-600 border-blue-100', label: '进行中' },
+    [PhaseStatus.COMPLETED]: { color: 'bg-emerald-50 text-emerald-600 border-emerald-100', label: '已完成' },
+    [PhaseStatus.SUBMITTED]: { color: 'bg-purple-50 text-purple-600 border-purple-100', label: '已提交' },
+  };
+
+  const { color, label } = config[status || PhaseStatus.NOT_STARTED];
+  
+  return (
+    <div className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest text-center min-w-[70px] ${color}`}>
+      {label}
+    </div>
+  );
+};
 
 interface BiddingPlanViewProps {
   tasks: BiddingTask[];
@@ -30,6 +48,7 @@ interface BiddingPlanViewProps {
   onUpdateTask: (task: BiddingTask) => void;
   onRemoveTask: (id: string) => void;
   onEnterWorkspace: (taskId: string) => void;
+  onAddLog?: (log: any) => void;
 }
 
 // 模拟人才库
@@ -44,37 +63,27 @@ const globalTalentPool: StaffMember[] = [
 
 type RoleType = 'leader' | 'exp' | 'member' | 'tech' | 'submission';
 
-const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, onUpdateTask, onRemoveTask, onEnterWorkspace }) => {
+const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, onUpdateTask, onRemoveTask, onEnterWorkspace, onAddLog }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [modalType, setModalType] = useState<RoleType | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   
   // active (正在进行中计划) vs submitted (完成投标活跃项目)
   const [activeTab, setActiveTab] = useState<'active' | 'submitted'>('active');
+  const [taskToRollback, setTaskToRollback] = useState<BiddingTask | null>(null);
 
-  // 1. 基于角色授权的任务过滤
-  const userAuthorizedTasks = useMemo(() => {
-    if (!currentUser) return [];
-    if (currentUser.id === 'ADMIN-001') return tasks;
-    return tasks.filter(task => {
-      return (
-        task.projectLeader?.id === currentUser.id ||
-        task.expSelectionLeader?.id === currentUser.id ||
-        task.memberDraftingLeader?.id === currentUser.id ||
-        task.techProposalLeader?.id === currentUser.id ||
-        task.submissionLeader?.id === currentUser.id
-      );
-    });
-  }, [tasks, currentUser]);
+  // 1. 所有用户均可查看所有任务
+  const userAuthorizedTasks = tasks;
 
   // 2. 根据 Tab 进行严格的状态隔离过滤
   const tabFilteredTasks = useMemo(() => {
-    return userAuthorizedTasks.filter(task => {
+    console.log("Filtering tasks for tab:", activeTab, "Total tasks:", tasks.length);
+    return tasks.filter(task => {
       const isSubmitted = task.currentStage === 'submitted';
       if (activeTab === 'active') return !isSubmitted;
       return isSubmitted;
     });
-  }, [userAuthorizedTasks, activeTab]);
+  }, [tasks, activeTab]);
 
   // 3. 关键字搜索过滤
   const filteredTasks = useMemo(() => {
@@ -103,10 +112,12 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, o
   };
 
   const handleCompleteBidding = (task: BiddingTask) => {
-    const isDocReady = !!(task.isExpDone && task.isTeamDone && task.isContentDone);
+    const isDocReady = task.expStatus === PhaseStatus.COMPLETED && 
+                       task.teamStatus === PhaseStatus.COMPLETED && 
+                       task.contentStatus === PhaseStatus.COMPLETED;
     
     if (!isDocReady) {
-      alert("提交失败：请确保“业绩遴选”、“成员拟定”及“技术方案”三个核心环节均已在编撰大厅锁定归档。");
+      alert("提交失败：请确保“业绩遴选”、“成员拟定”及“技术方案”三个核心环节均已完成。");
       return;
     }
 
@@ -116,6 +127,9 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, o
       status: '已结束', 
       progress: 100, 
       currentStage: 'submitted',
+      expStatus: PhaseStatus.SUBMITTED,
+      teamStatus: PhaseStatus.SUBMITTED,
+      contentStatus: PhaseStatus.SUBMITTED,
       isContentDone: true,
       isExpDone: true,
       isTeamDone: true 
@@ -124,6 +138,46 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, o
     // 立即执行 Tab 切换，强制刷新视图到已提交列表
     setActiveTab('submitted');
     console.log(`Task ${task.id} flow triggered to submitted pool.`);
+  };
+
+  const handleReopenTask = (task: BiddingTask) => {
+    console.log("Executing rollback for task:", task.id);
+    
+    // 构造回退数据
+    const rolledBackTask: BiddingTask = {
+      ...task,
+      status: 'analyzed',
+      currentStage: 'drafting',
+      progress: 90,
+      expStatus: PhaseStatus.COMPLETED,
+      teamStatus: PhaseStatus.COMPLETED,
+      contentStatus: PhaseStatus.COMPLETED,
+      isExpDone: true,
+      isTeamDone: true,
+      isContentDone: true,
+      lastModifiedBy: currentUser?.name || '系统管理员',
+      lastModifiedTime: new Date().toLocaleString()
+    };
+
+    // 1. 提交更新到父组件
+    onUpdateTask(rolledBackTask);
+
+    // 2. 记录系统日志
+    if (onAddLog) {
+      onAddLog({
+        timestamp: new Date().toLocaleString(),
+        level: 'info',
+        category: 'system',
+        operator: currentUser?.name || '系统管理员',
+        action: '项目回退',
+        details: `项目 [${task.projectId}] 已从“完成”回退至“进行中”`,
+        ip: '127.0.0.1'
+      });
+    }
+
+    // 3. 切换视图
+    setActiveTab('active');
+    setTaskToRollback(null);
   };
 
   const PersonnelSlot = ({ label, staff, type, taskId, readOnly = false }: { label: string, staff?: StaffMember, type: RoleType, taskId: string, readOnly?: boolean }) => (
@@ -198,7 +252,7 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, o
       <div className="flex justify-between items-center text-left">
         <div className="text-left">
           <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center uppercase italic leading-none">
-            投标计划与执行监控
+            投标计划管理
             {currentUser?.id !== 'ADMIN-001' && (
               <span className="ml-4 px-3 py-1 bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-amber-100 flex items-center italic">
                 <LockKeyhole size={12} className="mr-1.5"/> 数据受控模式
@@ -264,11 +318,9 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, o
             <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 border-b border-slate-100">
               <tr>
                 <th className="px-8 py-6 w-[320px]">项目标包概览 Entity</th>
-                <th className="px-6 py-6 text-center">总负责</th>
-                <th className="px-6 py-6 text-center">业绩遴选</th>
-                <th className="px-6 py-6 text-center">成员拟定</th>
-                <th className="px-6 py-6 text-center">方案编撰</th>
-                <th className="px-6 py-6 text-center">最终上传</th>
+                <th className="px-6 py-6 text-center">业绩遴选状态</th>
+                <th className="px-6 py-6 text-center">成员拟定状态</th>
+                <th className="px-6 py-6 text-center">方案编撰状态</th>
                 <th className="px-8 py-6 text-right">
                   {activeTab === 'active' ? '业务操作' : '开标倒计时 / 存证'}
                 </th>
@@ -276,7 +328,9 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, o
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredTasks.map((task) => {
-                const isDocReady = !!(task.isExpDone && task.isTeamDone && task.isContentDone);
+                const isDocReady = task.expStatus === PhaseStatus.COMPLETED && 
+                                   task.teamStatus === PhaseStatus.COMPLETED && 
+                                   task.contentStatus === PhaseStatus.COMPLETED;
                 const isSubmitted = task.currentStage === 'submitted';
                 
                 return (
@@ -296,11 +350,9 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, o
                       </div>
                     </td>
                     
-                    <td className="px-4 py-8"><div className="flex justify-center"><PersonnelSlot taskId={task.id} label="总负责" staff={task.projectLeader} type="leader" readOnly={isSubmitted} /></div></td>
-                    <td className="px-4 py-8"><div className="flex justify-center"><PersonnelSlot taskId={task.id} label="业绩" staff={task.expSelectionLeader} type="exp" readOnly={isSubmitted} /></div></td>
-                    <td className="px-4 py-8"><div className="flex justify-center"><PersonnelSlot taskId={task.id} label="成员" staff={task.memberDraftingLeader} type="member" readOnly={isSubmitted} /></div></td>
-                    <td className="px-4 py-8"><div className="flex justify-center"><PersonnelSlot taskId={task.id} label="方案" staff={task.techProposalLeader} type="tech" readOnly={isSubmitted} /></div></td>
-                    <td className="px-4 py-8"><div className="flex justify-center"><PersonnelSlot taskId={task.id} label="上传" staff={task.submissionLeader} type="submission" readOnly={isSubmitted} /></div></td>
+                    <td className="px-4 py-8"><div className="flex justify-center"><StatusBadge status={task.expStatus} /></div></td>
+                    <td className="px-4 py-8"><div className="flex justify-center"><StatusBadge status={task.teamStatus} /></div></td>
+                    <td className="px-4 py-8"><div className="flex justify-center"><StatusBadge status={task.contentStatus} /></div></td>
 
                     <td className="px-8 py-8 text-right">
                       {activeTab === 'active' ? (
@@ -328,9 +380,9 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, o
                                <div className="absolute bottom-full mb-3 right-0 w-48 bg-slate-900 text-white p-5 rounded-2xl text-[9px] font-bold opacity-0 group-hover/btn:opacity-100 pointer-events-none transition-all z-20 shadow-2xl border border-white/10 text-left">
                                  <p className="mb-2 text-blue-400 uppercase tracking-widest border-b border-white/10 pb-1 italic">前置环节锁定后解锁提交</p>
                                  <ul className="space-y-1.5 font-medium italic">
-                                   <li className={task.isExpDone ? 'text-emerald-400' : 'text-slate-500'}>● 业绩遴选 {task.isExpDone ? '已完成' : '未锁定'}</li>
-                                   <li className={task.isTeamDone ? 'text-emerald-400' : 'text-slate-500'}>● 成员拟定 {task.isTeamDone ? '已完成' : '未锁定'}</li>
-                                   <li className={task.isContentDone ? 'text-emerald-400' : 'text-slate-500'}>● 技术方案 {task.isContentDone ? '已完成' : '未锁定'}</li>
+                                   <li className={task.expStatus === PhaseStatus.COMPLETED ? 'text-emerald-400' : 'text-slate-500'}>● 业绩遴选 {task.expStatus === PhaseStatus.COMPLETED ? '已完成' : '未完成'}</li>
+                                   <li className={task.teamStatus === PhaseStatus.COMPLETED ? 'text-emerald-400' : 'text-slate-500'}>● 成员拟定 {task.teamStatus === PhaseStatus.COMPLETED ? '已完成' : '未完成'}</li>
+                                   <li className={task.contentStatus === PhaseStatus.COMPLETED ? 'text-emerald-400' : 'text-slate-500'}>● 技术方案 {task.contentStatus === PhaseStatus.COMPLETED ? '已完成' : '未完成'}</li>
                                  </ul>
                                </div>
                              )}
@@ -350,6 +402,18 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, o
                            <div className="flex space-x-2 mt-2">
                               <button onClick={() => onEnterWorkspace(task.id)} className="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-white border border-slate-200 shadow-sm transition-all" title="查看文书存证"><Eye size={16}/></button>
                               <button className="p-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all" title="下载存档"><Download size={16}/></button>
+                              <button 
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setTaskToRollback(task);
+                                }} 
+                                className="relative p-2.5 bg-amber-500 text-white rounded-xl hover:bg-amber-600 shadow-lg flex items-center justify-center cursor-pointer z-50 active:scale-95 transition-all" 
+                                title="回退至进行中"
+                              >
+                                <RotateCcw size={16} className="shrink-0" />
+                              </button>
                            </div>
                         </div>
                       )}
@@ -371,6 +435,38 @@ const BiddingPlanView: React.FC<BiddingPlanViewProps> = ({ tasks, currentUser, o
         </div>
       </div>
       
+      {/* 回退确认弹窗 */}
+      {taskToRollback && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-600">
+                <RotateCcw size={40} />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-2 uppercase italic tracking-tight">确认回退项目？</h3>
+              <p className="text-slate-500 text-sm mb-6 leading-relaxed">
+                您确定要将项目 <span className="font-bold text-slate-900">【{taskToRollback.lotName || taskToRollback.title}】</span> 回退至正在进行中计划吗？
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={() => setTaskToRollback(null)}
+                  className="py-4 px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest rounded-2xl transition-all"
+                >
+                  取消操作
+                </button>
+                <button 
+                  onClick={() => handleReopenTask(taskToRollback)}
+                  className="py-4 px-6 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-amber-200 transition-all"
+                >
+                  确认回退
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .custom-scrollbar-main::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar-main::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }

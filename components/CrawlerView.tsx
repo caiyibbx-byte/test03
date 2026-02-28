@@ -124,6 +124,7 @@ interface CrawlerViewProps {
 const CrawlerView: React.FC<CrawlerViewProps> = ({ plannedIds, onTogglePlan, onAddLog }) => {
   const [isCrawling, setIsCrawling] = useState(false);
   const [selectedTender, setSelectedTender] = useState<Tender | null>(null);
+  const [subPackageSearch, setSubPackageSearch] = useState('');
 
   const startCrawl = () => {
     setIsCrawling(true);
@@ -157,7 +158,7 @@ const CrawlerView: React.FC<CrawlerViewProps> = ({ plannedIds, onTogglePlan, onA
       {selectedTender && (
         <div className="fixed inset-0 z-[120] flex justify-end">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedTender(null)} />
-          <div className="relative w-full max-w-4xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden">
+          <div className="relative w-full max-w-[95vw] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden">
             <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 backdrop-blur-md sticky top-0 z-10 text-left">
               <div className="flex items-center space-x-4">
                 <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200">
@@ -168,125 +169,98 @@ const CrawlerView: React.FC<CrawlerViewProps> = ({ plannedIds, onTogglePlan, onA
                     <span className="text-[10px] font-black text-blue-600 bg-blue-100 px-2 py-0.5 rounded-lg uppercase tracking-widest">{selectedTender.projectId}</span>
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">{selectedTender.type}项目</span>
                   </div>
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight mt-1">{selectedTender.title}</h3>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight mt-1">
+                    {selectedTender.title}
+                    <span className="ml-3 text-xs font-bold text-slate-400">共 {selectedTender.subPackages?.length || 0} 个标包</span>
+                  </h3>
                 </div>
               </div>
-              <button onClick={() => setSelectedTender(null)} className="p-3 hover:bg-slate-200 rounded-full transition-colors">
-                <X size={24} className="text-slate-400" />
-              </button>
+              <div className="flex items-center space-x-4">
+                <div className="relative group">
+                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={14} />
+                  <input 
+                    type="text" 
+                    placeholder="搜索标包内容..." 
+                    value={subPackageSearch}
+                    onChange={(e) => setSubPackageSearch(e.target.value)}
+                    className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-64"
+                  />
+                </div>
+                <div className="flex items-center px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 font-black text-[10px] uppercase tracking-widest italic">
+                  <Info size={14} className="mr-2" /> Excel 视图模式已开启
+                </div>
+                <button onClick={() => setSelectedTender(null)} className="p-3 hover:bg-slate-200 rounded-full transition-colors">
+                  <X size={24} className="text-slate-400" />
+                </button>
+              </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar-main bg-slate-50/30">
+            <div className="flex-1 overflow-auto p-0 custom-scrollbar-main bg-slate-50">
               {selectedTender.subPackages && selectedTender.subPackages.length > 0 ? (
-                selectedTender.subPackages.map((pkg, idx) => {
-                  const isPlanned = plannedIds.includes(`${selectedTender.id}_lot_${pkg.id}`);
-                  return (
-                    <div key={pkg.id} className={`bg-white rounded-[32px] border-2 transition-all overflow-hidden flex flex-col shadow-sm ${
-                      isPlanned ? 'border-blue-600 shadow-xl shadow-blue-50' : 'border-slate-100 hover:border-blue-200'
-                    }`}>
-                      {/* 包头 */}
-                      <div className={`px-8 py-5 flex items-center justify-between ${isPlanned ? 'bg-blue-600 text-white' : 'bg-slate-900 text-white'}`}>
-                        <div className="flex items-center space-x-4">
-                          <span className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center font-black text-lg">{pkg.index}</span>
-                          <div className="text-left">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">Sub-Package Entity</p>
-                            <h4 className="text-lg font-black tracking-tight">{pkg.lotNumber}：{pkg.lotName}</h4>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => handleToggleLot(selectedTender, pkg)}
-                          className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center ${
-                            isPlanned ? 'bg-white text-blue-600 shadow-lg' : 'bg-blue-600 text-white hover:bg-blue-500'
-                          }`}
-                        >
-                          {isPlanned ? <><CircleCheck size={14} className="mr-2" /> 已加入计划</> : <><Plus size={14} className="mr-2" /> 投标此包</>}
-                        </button>
-                      </div>
-
-                      {/* 包详细字段网格 */}
-                      <div className="p-8 space-y-8 text-left">
-                        {/* 基础编号区 */}
-                        <div className="grid grid-cols-2 gap-8 border-b border-slate-50 pb-8">
-                           <div className="space-y-1.5">
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center"><ClipboardList size={12} className="mr-1.5" /> 分标编号</p>
-                              <p className="text-sm font-bold text-slate-800 italic">{pkg.subBidNumber}</p>
-                           </div>
-                           <div className="space-y-1.5">
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center"><FileText size={12} className="mr-1.5" /> 分标名称</p>
-                              <p className="text-sm font-bold text-slate-800 italic">{pkg.subBidName}</p>
-                           </div>
-                        </div>
-
-                        {/* 概况大字段 */}
-                        <div className="space-y-3">
-                           <p className="text-[10px] font-black text-blue-600 bg-blue-50 w-fit px-3 py-1 rounded-full uppercase tracking-widest italic">项目概况与招标范围</p>
-                           <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 italic">
-                             <p className="text-sm text-slate-600 leading-relaxed font-medium">{pkg.scope}</p>
-                           </div>
-                        </div>
-
-                        {/* 三大要求核心区 */}
-                        <div className="grid grid-cols-1 gap-6">
-                           <div className="flex space-x-6 items-start">
-                              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 border border-emerald-100"><ShieldCheck size={20} /></div>
-                              <div className="flex-1 pt-1">
-                                 <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-1.5 italic">资质要求 (Qualifications)</p>
-                                 <p className="text-xs text-slate-500 leading-relaxed font-medium">{pkg.qualifications}</p>
-                              </div>
-                           </div>
-                           <div className="flex space-x-6 items-start">
-                              <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center shrink-0 border border-amber-100"><Award size={20} /></div>
-                              <div className="flex-1 pt-1">
-                                 <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-1.5 italic">业绩要求 (Experiences)</p>
-                                 <p className="text-xs text-slate-500 leading-relaxed font-medium">{pkg.experience}</p>
-                              </div>
-                           </div>
-                           <div className="flex space-x-6 items-start">
-                              <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shrink-0 border border-purple-100"><Users2 size={20} /></div>
-                              <div className="flex-1 pt-1">
-                                 <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-1.5 italic">人员要求 (Personnel)</p>
-                                 <p className="text-xs text-slate-500 leading-relaxed font-medium">{pkg.personnel}</p>
-                              </div>
-                           </div>
-                        </div>
-
-                        {/* 实施与工期 */}
-                        <div className="grid grid-cols-2 gap-8 pt-6 border-t border-slate-50">
-                           <div className="space-y-1.5">
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center"><CalendarDays size={12} className="mr-1.5" /> 工期 / 服务期</p>
-                              <p className="text-sm font-bold text-slate-800">{pkg.duration}</p>
-                           </div>
-                           <div className="space-y-1.5">
-                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center"><MapPin size={12} className="mr-1.5" /> 实施地点</p>
-                              <p className="text-sm font-bold text-slate-800">{pkg.location}</p>
-                           </div>
-                        </div>
-
-                        {/* 金额与报价 - 强弱对比 */}
-                        <div className="grid grid-cols-3 gap-6 pt-8 mt-2">
-                           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1.5 italic">最高限价</p>
-                              <div className="flex items-baseline space-x-1">
-                                 <span className="text-lg font-black text-slate-900">{pkg.maxPrice}</span>
-                                 <span className="text-[9px] font-bold text-slate-400">万元</span>
-                              </div>
-                           </div>
-                           <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                              <p className="text-[9px] font-black text-blue-600 uppercase tracking-tighter mb-1.5 italic">预计采购金额</p>
-                              <div className="flex items-baseline space-x-1">
-                                 <span className="text-lg font-black text-blue-700">{pkg.estAmount}</span>
-                                 <span className="text-[9px] font-bold text-blue-400">万元</span>
-                              </div>
-                           </div>
-                           <div className="bg-slate-900 p-4 rounded-2xl shadow-inner">
-                              <p className="text-[9px] font-black text-slate-500 uppercase tracking-tighter mb-1.5 italic">报价方式</p>
-                              <p className="text-xs font-black text-white italic truncate">{pkg.quoteMethod}</p>
-                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
+                <div className="min-w-max">
+                  <table className="w-full text-left border-separate border-spacing-0">
+                    <thead className="sticky top-0 z-30 bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest">
+                      <tr>
+                        <th className="sticky left-0 z-40 bg-slate-100 w-16 px-4 py-4 border-b border-r border-slate-200 text-center">序号</th>
+                        <th className="sticky left-16 z-40 bg-slate-100 w-40 px-4 py-4 border-b border-r border-slate-200">操作</th>
+                        <th className="w-48 px-4 py-4 border-b border-r border-slate-200">分标编号</th>
+                        <th className="w-60 px-4 py-4 border-b border-r border-slate-200">分标名称</th>
+                        <th className="w-24 px-4 py-4 border-b border-r border-slate-200">包号</th>
+                        <th className="w-64 px-4 py-4 border-b border-r border-slate-200">包名称</th>
+                        <th className="w-96 px-4 py-4 border-b border-r border-slate-200">招标范围</th>
+                        <th className="w-80 px-4 py-4 border-b border-r border-slate-200">资质要求</th>
+                        <th className="w-80 px-4 py-4 border-b border-r border-slate-200">业绩要求</th>
+                        <th className="w-80 px-4 py-4 border-b border-r border-slate-200">人员要求</th>
+                        <th className="w-32 px-4 py-4 border-b border-r border-slate-200">工期</th>
+                        <th className="w-48 px-4 py-4 border-b border-r border-slate-200">实施地点</th>
+                        <th className="w-32 px-4 py-4 border-b border-r border-slate-200">最高限价(万)</th>
+                        <th className="w-32 px-4 py-4 border-b border-r border-slate-200">预计金额(万)</th>
+                        <th className="w-40 px-4 py-4 border-b border-slate-200">报价方式</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white">
+                      {selectedTender.subPackages
+                        .filter(pkg => {
+                          const s = subPackageSearch.toLowerCase();
+                          return pkg.lotName.toLowerCase().includes(s) || 
+                                 pkg.subBidName.toLowerCase().includes(s) ||
+                                 pkg.scope.toLowerCase().includes(s);
+                        })
+                        .map((pkg, idx) => {
+                          const isPlanned = plannedIds.includes(`${selectedTender.id}_lot_${pkg.id}`);
+                          return (
+                            <tr key={pkg.id} className={`group transition-colors ${isPlanned ? 'bg-blue-50/30' : 'hover:bg-slate-50'}`}>
+                              <td className="sticky left-0 z-20 bg-inherit px-4 py-4 border-r border-b border-slate-100 text-center font-mono text-xs font-bold text-slate-400">{pkg.index}</td>
+                              <td className="sticky left-16 z-20 bg-inherit px-4 py-4 border-r border-b border-slate-100">
+                                <button 
+                                  onClick={() => handleToggleLot(selectedTender, pkg)}
+                                  className={`w-full py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center ${
+                                    isPlanned ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-600 hover:text-blue-600'
+                                  }`}
+                                >
+                                  {isPlanned ? <CircleCheck size={12} className="mr-1.5" /> : <Plus size={12} className="mr-1.5" />}
+                                  {isPlanned ? '已加入' : '投标此包'}
+                                </button>
+                              </td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-xs font-bold text-slate-600 italic">{pkg.subBidNumber}</td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-xs font-bold text-slate-800">{pkg.subBidName}</td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-xs font-black text-blue-600">{pkg.lotNumber}</td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-xs font-black text-slate-900">{pkg.lotName}</td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-[11px] text-slate-500 leading-relaxed max-w-xs truncate group-hover:whitespace-normal group-hover:overflow-visible group-hover:max-w-none">{pkg.scope}</td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-[11px] text-slate-500 leading-relaxed">{pkg.qualifications}</td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-[11px] text-slate-500 leading-relaxed">{pkg.experience}</td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-[11px] text-slate-500 leading-relaxed">{pkg.personnel}</td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-xs font-bold text-slate-700">{pkg.duration}</td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-xs font-bold text-slate-700">{pkg.location}</td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-sm font-black text-slate-900">{pkg.maxPrice}</td>
+                              <td className="px-4 py-4 border-r border-b border-slate-100 text-sm font-black text-blue-600">{pkg.estAmount}</td>
+                              <td className="px-4 py-4 border-b border-slate-100 text-xs font-bold text-slate-500 italic">{pkg.quoteMethod}</td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <div className="py-20 flex flex-col items-center justify-center opacity-20 italic">
                   <WifiOff size={64} strokeWidth={1} />

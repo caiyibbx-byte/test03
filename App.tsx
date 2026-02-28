@@ -22,7 +22,7 @@ import {
   Briefcase,
   Users
 } from 'lucide-react';
-import { AppView, BiddingTask, Tender, SystemLog, StaffUser } from './types';
+import { AppView, BiddingTask, Tender, SystemLog, StaffUser, PhaseStatus } from './types';
 import DashboardView from './components/DashboardView';
 import CrawlerView from './components/CrawlerView';
 import AISelectorView from './components/AISelectorView';
@@ -151,7 +151,12 @@ const App: React.FC = () => {
       submissionLeader: { id: 'gt6', name: '陈工', role: '商务助理', years: 5, majorProject: '投标上传', tags: ['商务'] },
       isExpDone: true,
       isTeamDone: true,
-      isContentDone: true // 默认设为 true，方便测试提交流转
+      isContentDone: true,
+      expStatus: PhaseStatus.COMPLETED,
+      teamStatus: PhaseStatus.COMPLETED,
+      contentStatus: PhaseStatus.COMPLETED,
+      lastModifiedBy: '系统管理员',
+      lastModifiedTime: '2024-10-24 14:35:21'
     },
     {
       id: 'plan-002_lot_1',
@@ -179,13 +184,28 @@ const App: React.FC = () => {
       submissionLeader: { id: 'gt4', name: '孙经理', role: '项目总负责人', years: 14, majorProject: '华南区域投标', tags: ['商务'] },
       isExpDone: false,
       isTeamDone: false,
-      isContentDone: false
+      isContentDone: false,
+      expStatus: PhaseStatus.NOT_STARTED,
+      teamStatus: PhaseStatus.IN_PROGRESS,
+      contentStatus: PhaseStatus.NOT_STARTED
     }
   ]);
 
   const addToPlan = (tender: any, source: 'crawler' | 'ai' = 'crawler') => {
     if (plannedTasks.find(t => t.id === tender.id)) return;
-    const newTask: BiddingTask = { ...tender, priority: 'medium', source, progress: 10, currentStage: 'scanned', isExpDone: false, isTeamDone: false, isContentDone: false };
+    const newTask: BiddingTask = { 
+      ...tender, 
+      priority: 'medium', 
+      source, 
+      progress: 0, 
+      currentStage: 'scanned', 
+      isExpDone: false, 
+      isTeamDone: false, 
+      isContentDone: false,
+      expStatus: PhaseStatus.NOT_STARTED,
+      teamStatus: PhaseStatus.NOT_STARTED,
+      contentStatus: PhaseStatus.NOT_STARTED
+    };
     setPlannedTasks(prev => [...prev, newTask]);
   };
 
@@ -195,6 +215,7 @@ const App: React.FC = () => {
   };
 
   const updateTask = (updatedTask: BiddingTask) => {
+    console.log("Updating task in App state:", updatedTask.id, updatedTask.currentStage);
     // 使用函数式更新确保状态一致性
     setPlannedTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
   };
@@ -212,7 +233,7 @@ const App: React.FC = () => {
       case AppView.MANAGER_VIEW: return <ManagerView activeTasks={plannedTasks} />;
       case AppView.CRAWLER: return <CrawlerView plannedIds={plannedTasks.map(t => t.id)} onTogglePlan={(t) => plannedTasks.find(p => p.id === t.id) ? removeFromPlan(t.id) : addToPlan(t, 'crawler')} onAddLog={addLog} />;
       case AppView.AI_SELECTOR: return <AISelectorView plannedIds={plannedTasks.map(t => t.id)} onTogglePlan={(t) => addToPlan(t, 'ai')} />;
-      case AppView.BID_PLAN: return <BiddingPlanView tasks={plannedTasks} currentUser={currentUser} onUpdateTask={updateTask} onRemoveTask={removeFromPlan} onEnterWorkspace={handleEnterWorkspace} />;
+      case AppView.BID_PLAN: return <BiddingPlanView tasks={plannedTasks} currentUser={currentUser} onUpdateTask={updateTask} onRemoveTask={removeFromPlan} onEnterWorkspace={handleEnterWorkspace} onAddLog={addLog} />;
       case AppView.TEMPLATE_CONFIG: return <TemplateConfigView />;
       case AppView.PROJECT_BASE: return <KnowledgeBaseView mode="projects" />;
       case AppView.STAFF_BASE: return <PersonnelBaseView />;

@@ -63,7 +63,7 @@ import {
   Layout,
   Star
 } from 'lucide-react';
-import { BiddingTask, StaffUser, Personnel, ProjectExperience } from '../types';
+import { BiddingTask, StaffUser, Personnel, ProjectExperience, PhaseStatus } from '../types';
 
 interface BidWorkspaceViewProps {
   currentTask?: BiddingTask;
@@ -74,7 +74,7 @@ interface BidWorkspaceViewProps {
 interface TaskStatus {
   id: 'team' | 'exp' | 'content';
   name: string;
-  status: 'pending' | 'processing' | 'completed';
+  status: PhaseStatus;
   progress: number;
   icon: any;
   color: string;
@@ -239,18 +239,12 @@ const PersonnelFullDocumentMerged: React.FC<{ person: Personnel; isLeader?: bool
 // 主工作空间组件
 // --------------------------------------------------------------------------------
 const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, currentUser, onUpdateTask }) => {
-  // 权限核心逻辑
-  const isSysAdmin = currentUser?.id === 'ADMIN-001';
-  const canEditTeam = isSysAdmin || (currentTask?.memberDraftingLeader?.id === currentUser?.id);
-  const canEditExp = isSysAdmin || (currentTask?.expSelectionLeader?.id === currentUser?.id);
-  const canEditContent = isSysAdmin || (currentTask?.techProposalLeader?.id === currentUser?.id);
+  // 全员协作模式：取消权限限制
+  const canEditTeam = true;
+  const canEditExp = true;
+  const canEditContent = true;
 
-  const getActiveCanEdit = () => {
-    if (activeTaskId === 'team') return canEditTeam;
-    if (activeTaskId === 'exp') return canEditExp;
-    if (activeTaskId === 'content') return canEditContent;
-    return false;
-  };
+  const getActiveCanEdit = () => true;
 
   // 全量模拟数据
   const fullPersonnelPool: Personnel[] = [
@@ -297,19 +291,40 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
     { role: 'assistant', text: '您好！我是 GridGPT 文档编撰助理。建议先上传相关的行业标准或以往标书作为 AI 语境参考。' }
   ]);
 
+  const [teamAiChatInput, setTeamAiChatInput] = useState('');
+  const [teamAiChatMessages, setTeamAiChatMessages] = useState<{ role: 'user' | 'assistant', text: string }[]>([
+    { role: 'assistant', text: '您好！我是团队匹配助手。您可以告诉我更具体的项目需求（如：需要具备海外项目经验、需要熟悉某项特定技术），我将为您进行二次精准筛选。' }
+  ]);
+
+  const [expAiChatInput, setExpAiChatInput] = useState('');
+  const [expAiChatMessages, setExpAiChatMessages] = useState<{ role: 'user' | 'assistant', text: string }[]>([
+    { role: 'assistant', text: '您好！我是业绩匹配助手。您可以告诉我更具体的业绩要求（如：需要金额超过500万的项目、需要包含特高压关键词的项目），我将为您进行二次精准筛选。' }
+  ]);
+
   const [tasks, setTasks] = useState<TaskStatus[]>([
-    { id: 'team', name: '成员拟定', status: 'pending', progress: 0, icon: Users, color: 'blue' },
-    { id: 'exp', name: '业绩遴选', status: 'pending', progress: 0, icon: Award, color: 'emerald' },
-    { id: 'content', name: '技术方案编撰', status: 'pending', progress: 0, icon: FileText, color: 'purple' },
+    { id: 'team', name: '成员拟定', status: PhaseStatus.NOT_STARTED, progress: 0, icon: Users, color: 'blue' },
+    { id: 'exp', name: '业绩遴选', status: PhaseStatus.NOT_STARTED, progress: 0, icon: Award, color: 'emerald' },
+    { id: 'content', name: '技术方案编撰', status: PhaseStatus.NOT_STARTED, progress: 0, icon: FileText, color: 'purple' },
   ]);
 
   useEffect(() => {
     if (currentTask) {
       setTasks(prev => prev.map(t => {
-        if (t.id === 'team' && currentTask.isTeamDone) return { ...t, status: 'completed', progress: 100 };
-        if (t.id === 'exp' && currentTask.isExpDone) return { ...t, status: 'completed', progress: 100 };
-        if (t.id === 'content' && currentTask.isContentDone) return { ...t, status: 'completed', progress: 100 };
-        return t;
+        let status = PhaseStatus.NOT_STARTED;
+        let progress = 0;
+        
+        if (t.id === 'team') {
+          status = currentTask.teamStatus || PhaseStatus.NOT_STARTED;
+          progress = status === PhaseStatus.COMPLETED || status === PhaseStatus.SUBMITTED ? 100 : (status === PhaseStatus.IN_PROGRESS ? 50 : 0);
+        } else if (t.id === 'exp') {
+          status = currentTask.expStatus || PhaseStatus.NOT_STARTED;
+          progress = status === PhaseStatus.COMPLETED || status === PhaseStatus.SUBMITTED ? 100 : (status === PhaseStatus.IN_PROGRESS ? 50 : 0);
+        } else if (t.id === 'content') {
+          status = currentTask.contentStatus || PhaseStatus.NOT_STARTED;
+          progress = status === PhaseStatus.COMPLETED || status === PhaseStatus.SUBMITTED ? 100 : (status === PhaseStatus.IN_PROGRESS ? 50 : 0);
+        }
+        
+        return { ...t, status, progress };
       }));
     }
   }, [currentTask]);
@@ -326,10 +341,6 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
   }, [selectedPersonnel, projectLeaderId]);
 
   const markTaskCompleted = (taskId: 'team' | 'exp' | 'content') => {
-    if (!getActiveCanEdit()) {
-       alert("抱歉，您不是该环节的负责人，无法锁定归档。");
-       return;
-    }
     if (taskId === 'team' && selectedPersonnel.length > 0 && !projectLeaderId) {
       alert("请在已选团队池中指定一名“项目负责人”，这将决定标书资历文件的排版顺序。");
       return;
@@ -338,14 +349,32 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
 
     setPhase('hub');
     setActiveTaskId(null);
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completed', progress: 100 } : t));
 
-    const updatedTask = { ...currentTask };
-    if (taskId === 'team') updatedTask.isTeamDone = true;
-    if (taskId === 'exp') updatedTask.isExpDone = true;
-    if (taskId === 'content') updatedTask.isContentDone = true;
+    const updatedTask = { 
+      ...currentTask,
+      lastModifiedBy: currentUser?.name || '未知用户',
+      lastModifiedTime: new Date().toLocaleString()
+    };
+    
+    if (taskId === 'team') {
+      updatedTask.teamStatus = PhaseStatus.COMPLETED;
+      updatedTask.isTeamDone = true;
+    }
+    if (taskId === 'exp') {
+      updatedTask.expStatus = PhaseStatus.COMPLETED;
+      updatedTask.isExpDone = true;
+    }
+    if (taskId === 'content') {
+      updatedTask.contentStatus = PhaseStatus.COMPLETED;
+      updatedTask.isContentDone = true;
+    }
 
-    const doneCount = [updatedTask.isTeamDone, updatedTask.isExpDone, updatedTask.isContentDone].filter(Boolean).length;
+    const doneCount = [
+      updatedTask.teamStatus === PhaseStatus.COMPLETED || updatedTask.teamStatus === PhaseStatus.SUBMITTED,
+      updatedTask.expStatus === PhaseStatus.COMPLETED || updatedTask.expStatus === PhaseStatus.SUBMITTED,
+      updatedTask.contentStatus === PhaseStatus.COMPLETED || updatedTask.contentStatus === PhaseStatus.SUBMITTED
+    ].filter(Boolean).length;
+    
     updatedTask.progress = Math.round((doneCount / 3) * 100);
     onUpdateTask(updatedTask);
   };
@@ -393,6 +422,40 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
       setAiChatMessages([...newMsgs, { role: 'assistant', text: '已根据要求及参考资料优化了技术方案。' }]);
       setIsAiRecommending(false);
     }, 800);
+  };
+
+  const handleTeamAiChatSend = () => {
+    if (!teamAiChatInput.trim()) return;
+    const newMsgs = [...teamAiChatMessages, { role: 'user', text: teamAiChatInput } as const];
+    setTeamAiChatMessages(newMsgs);
+    setTeamAiChatInput('');
+    setIsAiRecommending(true);
+    setTimeout(() => {
+      setTeamAiChatMessages([...newMsgs, { role: 'assistant', text: '收到您的要求。正在重新分析专家库... 已根据您的指令（' + teamAiChatInput + '）完成了二次筛选，推荐列表已更新。' }]);
+      // 模拟二次筛选结果
+      setAiRecommendations([
+        { person: fullPersonnelPool[2], reason: '根据您的二次指令，该专家在相关领域有更深厚的技术沉淀。', matchScore: 96 },
+        { person: fullPersonnelPool[1], reason: '符合您提到的特定经验要求。', matchScore: 94 }
+      ]);
+      setIsAiRecommending(false);
+    }, 1000);
+  };
+
+  const handleExpAiChatSend = () => {
+    if (!expAiChatInput.trim()) return;
+    const newMsgs = [...expAiChatMessages, { role: 'user', text: expAiChatInput } as const];
+    setExpAiChatMessages(newMsgs);
+    setExpAiChatInput('');
+    setIsAiRecommending(true);
+    setTimeout(() => {
+      setExpAiChatMessages([...newMsgs, { role: 'assistant', text: '收到您的要求。正在重新分析业绩库... 已根据您的指令（' + expAiChatInput + '）完成了二次筛选，推荐列表已更新。' }]);
+      // 模拟二次筛选结果
+      setExpAiRecommendations([
+        { project: fullProjectPool[0], reason: '根据您的二次指令，该项目在相关领域有更匹配的实施细节。', matchScore: 95 },
+        { project: fullProjectPool[2], reason: '符合您提到的特定业绩规模或技术要求。', matchScore: 92 }
+      ]);
+      setIsAiRecommending(false);
+    }, 1000);
   };
 
   // Fix: Use React.FC to allow 'key' prop in JSX when rendering lists
@@ -482,8 +545,8 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
         </div>
         <div className="flex items-center space-x-6 shrink-0 ml-10">
            {phase !== 'hub' && (
-             <div className={`flex items-center px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest italic ${getActiveCanEdit() ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                {getActiveCanEdit() ? <><UnlockKeyhole size={14} className="mr-2"/> 编辑授权模式</> : <><LockKeyhole size={14} className="mr-2"/> 只读监控模式</>}
+             <div className="flex items-center px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest italic bg-emerald-50 text-emerald-600 border-emerald-100">
+                <UnlockKeyhole size={14} className="mr-2"/> 全员协作模式
              </div>
            )}
            {phase !== 'hub' && <button onClick={() => setPhase('hub')} className="text-xs font-black text-slate-400 flex items-center hover:text-blue-600 px-4 py-2 uppercase tracking-widest transition-colors"><ChevronLeft size={18} className="mr-2" /> 返回枢纽</button>}
@@ -494,15 +557,45 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
         {phase === 'hub' && (
           <div className="flex-1 grid grid-cols-3 gap-10 items-center p-10 animate-in fade-in duration-700">
              {tasks.map(task => {
-               const canEditThis = (task.id === 'team' && canEditTeam) || (task.id === 'exp' && canEditExp) || (task.id === 'content' && canEditContent);
+               const isSubmitted = task.status === PhaseStatus.SUBMITTED;
+               const isCompleted = task.status === PhaseStatus.COMPLETED;
+               
                return (
-                <div key={task.id} className={`relative h-[420px] rounded-[64px] border-2 transition-all flex flex-col items-center justify-center p-12 text-center group bg-white ${task.status === 'completed' ? 'border-emerald-100 shadow-xl' : 'border-slate-50 shadow-sm'}`}>
-                    <div className={`p-8 rounded-[40px] mb-8 transition-transform group-hover:scale-110 shadow-lg ${task.status === 'completed' ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white'}`}><task.icon size={48} /></div>
+                <div key={task.id} className={`relative h-[420px] rounded-[64px] border-2 transition-all flex flex-col items-center justify-center p-12 text-center group bg-white ${isSubmitted || isCompleted ? 'border-emerald-100 shadow-xl' : 'border-slate-50 shadow-sm'}`}>
+                    <div className={`p-8 rounded-[40px] mb-8 transition-transform group-hover:scale-110 shadow-lg ${isSubmitted || isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white'}`}><task.icon size={48} /></div>
                     <h4 className="text-2xl font-black text-slate-900 tracking-tight italic uppercase">{task.name}</h4>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden my-8 shadow-inner"><div className={`h-full transition-all duration-1000 ${task.status === 'completed' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${task.progress}%` }}></div></div>
-                    <button onClick={() => { setActiveTaskId(task.id); setPhase('task'); }} className="px-12 py-4 bg-slate-900 text-white rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-95">{task.status === 'completed' ? '重新校阅' : '立即进入'}</button>
-                    <p className="text-[9px] font-black text-slate-400 uppercase italic tracking-widest mt-4 italic">{canEditThis ? '编辑权' : '只读'}</p>
-                    {task.status === 'completed' && <div className="absolute top-10 right-10 text-emerald-500 animate-in zoom-in duration-500"><BadgeCheck size={40} /></div>}
+                    <div className="mt-2 px-4 py-1.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                      {task.status}
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden my-8 shadow-inner"><div className={`h-full transition-all duration-1000 ${isSubmitted || isCompleted ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${task.progress}%` }}></div></div>
+                    <button 
+                      onClick={() => { 
+                        if (isSubmitted) return;
+                        setActiveTaskId(task.id); 
+                        setPhase('task'); 
+                        // 进入阶段即设为进行中
+                        if (task.status === PhaseStatus.NOT_STARTED && currentTask && onUpdateTask) {
+                          const updated = { ...currentTask };
+                          if (task.id === 'team') updated.teamStatus = PhaseStatus.IN_PROGRESS;
+                          if (task.id === 'exp') updated.expStatus = PhaseStatus.IN_PROGRESS;
+                          if (task.id === 'content') updated.contentStatus = PhaseStatus.IN_PROGRESS;
+                          onUpdateTask(updated);
+                        }
+                      }} 
+                      disabled={isSubmitted}
+                      className={`px-12 py-4 rounded-[24px] text-[10px] font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 ${isSubmitted ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-slate-900 text-white hover:bg-black'}`}
+                    >
+                      {isSubmitted ? '已提交锁定' : (isCompleted ? '重新校阅' : '立即进入')}
+                    </button>
+                    <div className="mt-6 flex flex-col items-center space-y-1">
+                      <p className="text-[9px] font-black text-slate-400 uppercase italic tracking-widest">全员协作模式</p>
+                      {currentTask?.lastModifiedBy && (
+                        <p className="text-[8px] text-slate-300 font-bold uppercase">
+                          最后修改: {currentTask.lastModifiedBy} @ {currentTask.lastModifiedTime}
+                        </p>
+                      )}
+                    </div>
+                    {(isSubmitted || isCompleted) && <div className="absolute top-10 right-10 text-emerald-500 animate-in zoom-in duration-500"><BadgeCheck size={40} /></div>}
                 </div>
                );
              })}
@@ -519,7 +612,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                 </div>
                 <div className="flex space-x-4"><button onClick={() => setPhase('team_preview')} className="px-8 py-4 bg-slate-100 text-slate-600 rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 shadow-sm">资历全案 A4 预览</button>{canEditTeam && (<button onClick={() => markTaskCompleted('team')} className="px-10 py-4 bg-emerald-600 text-white rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl"><CheckCircle2 size={18} className="mr-3 inline" /> 确认并锁定环节</button>)}</div>
              </div>
-             <div className="flex-1 overflow-hidden flex bg-white text-left">
+              <div className="flex-1 overflow-hidden flex bg-white text-left">
                 <div className="flex-1 flex flex-col border-r border-slate-100 p-8 space-y-8 overflow-y-auto custom-scrollbar-main">
                    <section className="text-left">
                       <div className="flex items-center justify-between mb-6 text-left">
@@ -537,61 +630,99 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                       <div className="grid grid-cols-2 gap-4">{fullPersonnelPool.filter(p => p.name.includes(personnelSearch)).map(p => <PersonnelCard key={p.id} person={p} />)}</div>
                    </section>
                 </div>
-                <div className="w-[420px] bg-slate-950 flex flex-col p-8 text-left shrink-0">
-                   <div className="flex items-center justify-between mb-10 text-white italic text-left">
-                      <div className="flex items-center italic">
-                        <UserPlus2 size={20} className="text-indigo-400 mr-3" />
-                        <h4 className="text-sm font-black uppercase tracking-tighter">标书拟定团队池</h4>
+                <div className="w-[450px] flex flex-col border-l border-slate-100 shrink-0">
+                  <div className="flex-1 bg-slate-950 flex flex-col p-8 text-left overflow-hidden">
+                    <div className="flex items-center justify-between mb-10 text-white italic text-left">
+                        <div className="flex items-center italic">
+                          <UserPlus2 size={20} className="text-indigo-400 mr-3" />
+                          <h4 className="text-sm font-black uppercase tracking-tighter">标书拟定团队池</h4>
+                        </div>
+                        <span className="text-slate-500 text-[10px] font-black italic tracking-widest">{selectedPersonnel.length} / 12 人</span>
+                    </div>
+                    <div className="flex-1 space-y-4 overflow-y-auto custom-scrollbar-dark pr-2 text-left">
+                        {selectedPersonnel.map((p, idx) => {
+                          const isLeader = p.id === projectLeaderId;
+                          return (
+                            <div key={idx} className={`p-5 border transition-all rounded-[32px] flex items-center justify-between group text-white text-left animate-in slide-in-from-bottom-4 ${isLeader ? 'bg-indigo-600/20 border-indigo-500/50 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'bg-white/5 border-white/5'}`}>
+                                <div className="flex items-center space-x-4 min-w-0 flex-1 text-left">
+                                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 shadow-lg transition-colors ${isLeader ? 'bg-indigo-600 text-white ring-4 ring-indigo-600/20' : 'bg-slate-800 text-slate-400'}`}>
+                                    {isLeader ? <Medal size={20} /> : idx + 1}
+                                  </div>
+                                  <div className="text-left min-w-0">
+                                      <div className="flex items-center space-x-2">
+                                        <p className="text-base font-black italic truncate">{p.name}</p>
+                                        {isLeader && <span className="px-2 py-0.5 bg-indigo-600 text-[8px] font-black uppercase rounded italic tracking-widest">负责人</span>}
+                                      </div>
+                                      <p className="text-[10px] text-slate-500 font-bold uppercase mt-1 italic truncate">{p.proposedPosition}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {canEditTeam && (
+                                    <button 
+                                      onClick={() => setProjectLeaderId(isLeader ? null : p.id)} 
+                                      className={`p-2 rounded-lg transition-all ${isLeader ? 'text-blue-400 bg-blue-400/10' : 'text-slate-500 hover:text-blue-400 hover:bg-white/5'}`}
+                                      title={isLeader ? "取消负责人身份" : "设为项目负责人"}
+                                    >
+                                      <Star size={16} fill={isLeader ? "currentColor" : "none"} />
+                                    </button>
+                                  )}
+                                  <button onClick={() => setDetailPerson(p)} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-all"><Maximize2 size={16}/></button>
+                                  {canEditTeam && <button onClick={() => { setSelectedPersonnel(selectedPersonnel.filter((_, i) => i !== idx)); if(isLeader) setProjectLeaderId(null); }} className="p-2 text-slate-600 hover:text-red-400 transition-all rounded-lg hover:bg-white/5"><Trash2 size={18} /></button>}
+                                </div>
+                            </div>
+                          );
+                        })}
+                        {selectedPersonnel.length === 0 && (<div className="h-full flex flex-col items-center justify-center text-slate-700 opacity-30 border-2 border-dashed border-white/5 rounded-[40px]"><UserSearch size={48} strokeWidth={1} /><p className="text-[10px] font-black uppercase tracking-[0.3em] mt-6 italic">Personnel Pool Empty</p></div>)}
+                    </div>
+                    {projectLeaderId && (
+                      <div className="mt-6 p-4 bg-indigo-600/10 border border-indigo-600/20 rounded-2xl animate-in fade-in slide-in-from-bottom-2">
+                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center italic">
+                            <CheckCircle2 size={12} className="mr-2" /> 预览优化已就绪
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                            负责人 <span className="text-white font-bold">{selectedPersonnel.find(p => p.id === projectLeaderId)?.name}</span> 的资历将自动排在标书文件的首页。
+                          </p>
                       </div>
-                      <span className="text-slate-500 text-[10px] font-black italic tracking-widest">{selectedPersonnel.length} / 12 人</span>
-                   </div>
-                   <div className="flex-1 space-y-4 overflow-y-auto custom-scrollbar-dark pr-2 text-left">
-                      {selectedPersonnel.map((p, idx) => {
-                        const isLeader = p.id === projectLeaderId;
-                        return (
-                          <div key={idx} className={`p-5 border transition-all rounded-[32px] flex items-center justify-between group text-white text-left animate-in slide-in-from-bottom-4 ${isLeader ? 'bg-indigo-600/20 border-indigo-500/50 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'bg-white/5 border-white/5'}`}>
-                             <div className="flex items-center space-x-4 min-w-0 flex-1 text-left">
-                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 shadow-lg transition-colors ${isLeader ? 'bg-indigo-600 text-white ring-4 ring-indigo-600/20' : 'bg-slate-800 text-slate-400'}`}>
-                                  {isLeader ? <Medal size={20} /> : idx + 1}
-                                </div>
-                                <div className="text-left min-w-0">
-                                   <div className="flex items-center space-x-2">
-                                      <p className="text-base font-black italic truncate">{p.name}</p>
-                                      {isLeader && <span className="px-2 py-0.5 bg-indigo-600 text-[8px] font-black uppercase rounded italic tracking-widest">负责人</span>}
-                                   </div>
-                                   <p className="text-[10px] text-slate-500 font-bold uppercase mt-1 italic truncate">{p.proposedPosition}</p>
-                                </div>
-                             </div>
-                             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {canEditTeam && (
-                                  <button 
-                                    onClick={() => setProjectLeaderId(isLeader ? null : p.id)} 
-                                    className={`p-2 rounded-lg transition-all ${isLeader ? 'text-blue-400 bg-blue-400/10' : 'text-slate-500 hover:text-blue-400 hover:bg-white/5'}`}
-                                    title={isLeader ? "取消负责人身份" : "设为项目负责人"}
-                                  >
-                                    <Star size={16} fill={isLeader ? "currentColor" : "none"} />
-                                  </button>
-                                )}
-                                <button onClick={() => setDetailPerson(p)} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-all"><Maximize2 size={16}/></button>
-                                {canEditTeam && <button onClick={() => { setSelectedPersonnel(selectedPersonnel.filter((_, i) => i !== idx)); if(isLeader) setProjectLeaderId(null); }} className="p-2 text-slate-600 hover:text-red-400 transition-all rounded-lg hover:bg-white/5"><Trash2 size={18} /></button>}
-                             </div>
+                    )}
+                  </div>
+
+                  {/* 新增：团队二次筛选 AI 对话框 */}
+                  <div className="h-[280px] flex flex-col bg-slate-900 border-t border-white/10 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/10 to-transparent pointer-events-none" />
+                    <div className="px-6 py-4 border-b border-white/5 bg-slate-800/50 backdrop-blur-xl flex items-center justify-between relative z-10">
+                      <div className="flex items-center space-x-3">
+                        <Bot size={18} className="text-indigo-400"/>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-white italic">GridGPT 筛选辅助助理</h4>
+                      </div>
+                      {isAiRecommending && <div className="flex items-center space-x-1 animate-pulse"><span className="w-1.5 h-1.5 bg-indigo-400 rounded-full"></span></div>}
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar-dark relative z-10">
+                      {teamAiChatMessages.map((msg, i) => (
+                        <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-1`}>
+                          <div className={`max-w-[85%] p-4 rounded-2xl text-[10px] leading-relaxed shadow-lg ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none font-bold' : 'bg-white/5 text-slate-300 border border-white/10 rounded-tl-none italic font-medium'}`}>
+                            {msg.text}
                           </div>
-                        );
-                      })}
-                      {selectedPersonnel.length === 0 && (<div className="h-full flex flex-col items-center justify-center text-slate-700 opacity-30 border-2 border-dashed border-white/5 rounded-[40px]"><UserSearch size={48} strokeWidth={1} /><p className="text-[10px] font-black uppercase tracking-[0.3em] mt-6 italic">Personnel Pool Empty</p></div>)}
-                   </div>
-                   {projectLeaderId && (
-                     <div className="mt-6 p-4 bg-indigo-600/10 border border-indigo-600/20 rounded-2xl animate-in fade-in slide-in-from-bottom-2">
-                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center italic">
-                           <CheckCircle2 size={12} className="mr-2" /> 预览优化已就绪
-                        </p>
-                        <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
-                          负责人 <span className="text-white font-bold">{selectedPersonnel.find(p => p.id === projectLeaderId)?.name}</span> 的资历将自动排在标书文件的首页。
-                        </p>
-                     </div>
-                   )}
+                        </div>
+                      ))}
+                      {isAiRecommending && <div className="flex justify-start"><div className="bg-white/5 border border-white/10 p-4 rounded-2xl rounded-tl-none"><RefreshCw size={14} className="text-indigo-400 animate-spin" /></div></div>}
+                    </div>
+                    <div className="p-4 bg-slate-950/50 border-t border-white/5 relative z-10">
+                      <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-xl p-1.5 focus-within:border-indigo-500/50 transition-all">
+                        <input 
+                          value={teamAiChatInput} 
+                          onChange={e => setTeamAiChatInput(e.target.value)} 
+                          onKeyDown={e => e.key === 'Enter' && handleTeamAiChatSend()}
+                          placeholder="输入筛选要求（如：需要500kV经验）..." 
+                          className="flex-1 bg-transparent border-none outline-none text-white text-[10px] px-3 font-medium placeholder:text-slate-700" 
+                        />
+                        <button onClick={handleTeamAiChatSend} className="bg-indigo-600 p-2 text-white rounded-lg hover:bg-indigo-500 shadow-lg active:scale-90 transition-all">
+                          <Send size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-             </div>
+              </div>
           </div>
         )}
 
@@ -605,7 +736,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                 </div>
                 <div className="flex space-x-4"><button onClick={() => setPhase('exp_preview')} className="px-8 py-4 bg-slate-100 text-slate-600 rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all border border-slate-200 shadow-sm flex items-center"><History size={16} className="mr-2" /> 业绩全案预览 (仿真)</button>{canEditExp && (<button onClick={() => markTaskCompleted('exp')} className="px-10 py-4 bg-emerald-600 text-white rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl active:scale-95"><CheckCircle2 size={18} className="mr-3 inline" /> 锁定所选业绩</button>)}</div>
              </div>
-             <div className="flex-1 overflow-hidden flex bg-white text-left">
+              <div className="flex-1 overflow-hidden flex bg-white text-left">
                 <div className="flex-1 flex flex-col border-r border-slate-100 p-8 space-y-10 overflow-y-auto custom-scrollbar-main bg-slate-50/20">
                    <section className="text-left">
                       <div className="flex items-center justify-between mb-6 text-left"><div className="flex items-center italic text-left"><Bot size={24} className="text-emerald-600 mr-3" /><h4 className="text-xs font-black text-slate-900 uppercase">GridGPT 语义契合推荐</h4></div><button disabled={isAiRecommending || !canEditExp} onClick={handleExpAiRecommend} className="flex items-center px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-xl disabled:opacity-30 transition-all">{isAiRecommending ? <RefreshCw className="mr-2 animate-spin" size={12}/> : <BrainCircuit size={12} className="mr-2" />} 启动智能匹配</button></div>
@@ -635,18 +766,56 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                       </div>
                    </section>
                 </div>
-                <div className="w-[400px] bg-slate-950 flex flex-col p-8 text-left relative overflow-hidden shrink-0">
-                   <div className="flex items-center justify-between mb-10 text-white italic relative z-10 text-left"><div className="flex items-center italic"><DatabaseZap size={22} className="text-emerald-400 mr-3" /><div><h4 className="text-sm font-black uppercase tracking-tighter">本工程支撑业绩池</h4></div></div><span className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-slate-400 text-[10px] font-black italic tracking-widest">{selectedProjects.length} 项已入选</span></div>
-                   <div className="flex-1 space-y-4 overflow-y-auto custom-scrollbar-dark pr-2 relative z-10 text-left">
-                      {selectedProjects.map((p, idx) => (
-                        <div key={idx} className="p-5 bg-white/5 border border-white/10 rounded-[32px] flex items-center justify-between group text-white text-left animate-in slide-in-from-right-4 transition-all">
-                           <div className="flex items-center space-x-4 min-w-0 flex-1 text-left"><div className="w-12 h-12 bg-emerald-600 text-white rounded-2xl flex items-center justify-center font-black text-sm shrink-0 shadow-lg">{idx + 1}</div><div className="text-left min-w-0"><p className="text-sm font-black italic truncate leading-none mb-2">{p.projectName}</p><p className="text-[9px] text-slate-500 font-black uppercase italic tracking-tighter">{p.amount}W · {p.contractYear}年</p></div></div>
-                           <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all"><button onClick={() => setDetailProject(p)} className="p-2.5 text-slate-500 hover:text-white"><Maximize2 size={16}/></button>{canEditExp && (<button onClick={() => setSelectedProjects(selectedProjects.filter((_, i) => i !== idx))} className="p-2.5 text-slate-500 hover:text-red-400 transition-all"><Trash2 size={16} /></button>)}</div>
+                <div className="w-[450px] flex flex-col border-l border-slate-100 shrink-0">
+                  <div className="flex-1 bg-slate-950 flex flex-col p-8 text-left relative overflow-hidden">
+                    <div className="flex items-center justify-between mb-10 text-white italic relative z-10 text-left"><div className="flex items-center italic"><DatabaseZap size={22} className="text-emerald-400 mr-3" /><div><h4 className="text-sm font-black uppercase tracking-tighter">本工程支撑业绩池</h4></div></div><span className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-slate-400 text-[10px] font-black italic tracking-widest">{selectedProjects.length} 项已入选</span></div>
+                    <div className="flex-1 space-y-4 overflow-y-auto custom-scrollbar-dark pr-2 relative z-10 text-left">
+                        {selectedProjects.map((p, idx) => (
+                          <div key={idx} className="p-5 bg-white/5 border border-white/10 rounded-[32px] flex items-center justify-between group text-white text-left animate-in slide-in-from-right-4 transition-all">
+                             <div className="flex items-center space-x-4 min-w-0 flex-1 text-left"><div className="w-12 h-12 bg-emerald-600 text-white rounded-2xl flex items-center justify-center font-black text-sm shrink-0 shadow-lg">{idx + 1}</div><div className="text-left min-w-0"><p className="text-sm font-black italic truncate leading-none mb-2">{p.projectName}</p><p className="text-[9px] text-slate-500 font-black uppercase italic tracking-tighter">{p.amount}W · {p.contractYear}年</p></div></div>
+                             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all"><button onClick={() => setDetailProject(p)} className="p-2.5 text-slate-500 hover:text-white"><Maximize2 size={16}/></button>{canEditExp && (<button onClick={() => setSelectedProjects(selectedProjects.filter((_, i) => i !== idx))} className="p-2.5 text-slate-500 hover:text-red-400 transition-all"><Trash2 size={16} /></button>)}</div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+
+                  {/* 新增：业绩二次筛选 AI 对话框 */}
+                  <div className="h-[280px] flex flex-col bg-slate-900 border-t border-white/10 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/10 to-transparent pointer-events-none" />
+                    <div className="px-6 py-4 border-b border-white/5 bg-slate-800/50 backdrop-blur-xl flex items-center justify-between relative z-10">
+                      <div className="flex items-center space-x-3">
+                        <Bot size={18} className="text-emerald-400"/>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-white italic">GridGPT 业绩筛选助理</h4>
+                      </div>
+                      {isAiRecommending && <div className="flex items-center space-x-1 animate-pulse"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span></div>}
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar-dark relative z-10">
+                      {expAiChatMessages.map((msg, i) => (
+                        <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-1`}>
+                          <div className={`max-w-[85%] p-4 rounded-2xl text-[10px] leading-relaxed shadow-lg ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none font-bold' : 'bg-white/5 text-slate-300 border border-white/10 rounded-tl-none italic font-medium'}`}>
+                            {msg.text}
+                          </div>
                         </div>
                       ))}
-                   </div>
+                      {isAiRecommending && <div className="flex justify-start"><div className="bg-white/5 border border-white/10 p-4 rounded-2xl rounded-tl-none"><RefreshCw size={14} className="text-emerald-400 animate-spin" /></div></div>}
+                    </div>
+                    <div className="p-4 bg-slate-950/50 border-t border-white/5 relative z-10">
+                      <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-xl p-1.5 focus-within:border-emerald-500/50 transition-all">
+                        <input 
+                          value={expAiChatInput} 
+                          onChange={e => setExpAiChatInput(e.target.value)} 
+                          onKeyDown={e => e.key === 'Enter' && handleExpAiChatSend()}
+                          placeholder="输入业绩筛选要求（如：金额>500万）..." 
+                          className="flex-1 bg-transparent border-none outline-none text-white text-[10px] px-3 font-medium placeholder:text-slate-700" 
+                        />
+                        <button onClick={handleExpAiChatSend} className="bg-emerald-600 p-2 text-white rounded-lg hover:bg-emerald-500 shadow-lg active:scale-90 transition-all">
+                          <Send size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-             </div>
+              </div>
           </div>
         )}
 
