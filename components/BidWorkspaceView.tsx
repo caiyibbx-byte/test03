@@ -631,7 +631,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                    </section>
                 </div>
                 <div className="w-[450px] flex flex-col border-l border-slate-100 shrink-0">
-                  <div className="flex-[3] min-h-[400px] bg-slate-950 flex flex-col p-8 text-left overflow-hidden">
+                  <div className="flex-[3] bg-slate-950 flex flex-col p-8 text-left overflow-hidden">
                     <div className="flex items-center justify-between mb-10 text-white italic text-left">
                         <div className="flex items-center italic">
                           <UserPlus2 size={20} className="text-indigo-400 mr-3" />
@@ -754,20 +754,39 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                    <div className="h-px bg-slate-100 w-full"></div>
                    <section className="text-left pb-10">
                       <div className="flex items-center justify-between mb-6 text-left"><div className="flex items-center italic text-left"><SearchCode size={24} className="text-slate-400 mr-3" /><h4 className="text-xs font-black text-slate-900 uppercase">全库业绩人工检索</h4></div><div className="relative group"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={14} /><input disabled={!canEditExp} value={projectSearch} onChange={e => setProjectSearch(e.target.value)} placeholder="检索名称/年份/建设单位..." className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl outline-none text-[11px] font-bold text-slate-700 w-80 focus:border-emerald-500 transition-all shadow-sm" /></div></div>
-                      <div className="grid grid-cols-2 gap-6">
-                         {fullProjectPool.filter(p => p.projectName.includes(projectSearch)).map(p => (
-                            <div key={p.id} className="p-6 bg-white border border-slate-100 rounded-[32px] hover:border-emerald-300 hover:shadow-xl transition-all flex flex-col text-left group">
-                               <div className="flex items-center justify-between mb-4"><div className="flex items-center space-x-2"><span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded uppercase italic">{p.contractYear}</span><span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black rounded uppercase border border-blue-100">{p.amount}W</span></div><BadgeCheck size={16} className="text-emerald-500 opacity-20 group-hover:opacity-100" /></div>
-                               <h5 className="text-[13px] font-black text-slate-800 leading-tight mb-2 italic line-clamp-2 min-h-[32px]">{p.projectName}</h5>
-                               <div className="flex items-center text-[10px] text-slate-400 font-bold uppercase mb-5 italic truncate"><Building2 size={12} className="mr-1.5" /> {p.clientName}</div>
-                               <div className="flex items-center space-x-2 mt-auto"><button onClick={() => setDetailProject(p)} className="flex-1 py-3 bg-slate-50 text-slate-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-100 flex items-center justify-center"><Eye size={12} className="mr-1.5" /> 详情</button>{canEditExp && (<button onClick={() => setSelectedProjects(prev => prev.find(i => i.id === p.id) ? prev : [...prev, p])} className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center">选用</button>)}</div>
-                            </div>
-                         ))}
+                      <div className="overflow-x-auto border border-slate-200 rounded-[32px] bg-white shadow-sm overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                          <thead className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest">
+                            <tr>
+                              <th className="px-6 py-4 border-r border-slate-800">年份</th>
+                              <th className="px-6 py-4 border-r border-slate-800">业绩名称</th>
+                              <th className="px-6 py-4 border-r border-slate-800">建设单位</th>
+                              <th className="px-6 py-4 border-r border-slate-800 text-center">金额(W)</th>
+                              <th className="px-6 py-4 text-center">操作</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {fullProjectPool.filter(p => p.projectName.includes(projectSearch)).map(p => (
+                              <tr key={p.id} className="hover:bg-slate-50 transition-colors group">
+                                <td className="px-6 py-4 text-xs font-black text-slate-500 italic border-r border-slate-100">{p.contractYear}</td>
+                                <td className="px-6 py-4 text-xs font-black text-slate-900 italic border-r border-slate-100">{p.projectName}</td>
+                                <td className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-slate-100">{p.clientName}</td>
+                                <td className="px-6 py-4 text-xs font-black text-blue-600 italic border-r border-slate-100 text-center">{p.amount}W</td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center justify-center space-x-3">
+                                    <button onClick={() => setDetailProject(p)} className="p-2 text-slate-400 hover:text-blue-600 transition-all bg-slate-50 rounded-lg"><Eye size={14} /></button>
+                                    {canEditExp && (<button onClick={() => setSelectedProjects(prev => prev.find(i => i.id === p.id) ? prev : [...prev, p])} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-md">选用</button>)}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                    </section>
                 </div>
                 <div className="w-[450px] flex flex-col border-l border-slate-100 shrink-0">
-                  <div className="flex-[3] min-h-[400px] bg-slate-950 flex flex-col p-8 text-left relative overflow-hidden">
+                  <div className="flex-[3] bg-slate-950 flex flex-col p-8 text-left relative overflow-hidden">
                     <div className="flex items-center justify-between mb-10 text-white italic relative z-10 text-left"><div className="flex items-center italic"><DatabaseZap size={22} className="text-emerald-400 mr-3" /><div><h4 className="text-sm font-black uppercase tracking-tighter">本工程支撑业绩池</h4></div></div><span className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-slate-400 text-[10px] font-black italic tracking-widest">{selectedProjects.length} 项已入选</span></div>
                     <div className="flex-1 space-y-4 overflow-y-auto custom-scrollbar-dark pr-2 relative z-10 text-left">
                         {selectedProjects.map((p, idx) => (
@@ -780,7 +799,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                   </div>
 
                   {/* 新增：业绩二次筛选 AI 对话框 */}
-                  <div className="h-[280px] flex flex-col bg-slate-900 border-t border-white/10 relative overflow-hidden">
+                  <div className="h-[280px] min-h-[280px] shrink-0 flex flex-col bg-slate-900 border-t border-white/10 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/10 to-transparent pointer-events-none" />
                     <div className="px-6 py-4 border-b border-white/5 bg-slate-800/50 backdrop-blur-xl flex items-center justify-between relative z-10">
                       <div className="flex items-center space-x-3">
