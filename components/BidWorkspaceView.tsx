@@ -619,7 +619,77 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                          <div className="flex items-center italic text-left"><Bot size={24} className="text-indigo-600 mr-3" /><h4 className="text-xs font-black text-slate-900 uppercase">GridGPT 专家智能推荐轨道</h4></div>
                          <button disabled={isAiRecommending || !canEditTeam} onClick={handleTeamAiRecommend} className="flex items-center px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-xl disabled:opacity-30 transition-all">{isAiRecommending ? <RefreshCw className="mr-2 animate-spin" size={12}/> : <BrainCircuit size={12} className="mr-2" />} 启动画像匹配</button>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">{aiRecommendations.map((rec, idx) => <PersonnelCard key={idx} person={rec.person} isRecommended reason={rec.reason} score={rec.matchScore} />)}</div>
+                      <div className="overflow-x-auto border-2 border-indigo-100 rounded-[32px] bg-indigo-50/30 shadow-sm overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                          <thead className="bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest">
+                            <tr>
+                              <th className="px-4 py-4 border-r border-indigo-500">匹配度</th>
+                              <th className="px-4 py-4 border-r border-indigo-500">姓名</th>
+                              <th className="px-4 py-4 border-r border-indigo-500">职称</th>
+                              <th className="px-4 py-4 border-r border-indigo-500">学历/专业</th>
+                              <th className="px-4 py-4 border-r border-indigo-500 text-center">工龄</th>
+                              <th className="px-4 py-4 border-r border-indigo-500 text-center">同类年限</th>
+                              <th className="px-4 py-4 border-r border-indigo-500">拟任岗位</th>
+                              <th className="px-4 py-4 border-r border-indigo-500 text-center">当前负荷</th>
+                              <th className="px-4 py-4 border-r border-indigo-500">AI 画像判定</th>
+                              <th className="px-4 py-4 text-center">操作</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-indigo-100/50">
+                            {aiRecommendations.map((rec, idx) => (
+                              <tr key={idx} className="hover:bg-indigo-100/50 transition-colors group">
+                                <td className="px-4 py-4 border-r border-indigo-100/50">
+                                  <span className="px-2 py-1 bg-indigo-600 text-white text-[10px] font-black rounded italic">
+                                    {rec.matchScore}%
+                                  </span>
+                                </td>
+                                <td className="px-4 py-4 text-xs font-black text-slate-900 italic border-r border-indigo-100/50">
+                                  {rec.person.name}
+                                </td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-500 uppercase italic border-r border-indigo-100/50">
+                                  {rec.person.title}
+                                </td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-indigo-100/50">
+                                  {rec.person.education} · {rec.person.major}
+                                </td>
+                                <td className="px-4 py-4 text-xs font-black text-slate-600 italic border-r border-indigo-100/50 text-center">
+                                  {rec.person.years}年
+                                </td>
+                                <td className="px-4 py-4 text-xs font-black text-indigo-600 italic border-r border-indigo-100/50 text-center">
+                                  {rec.person.similarYears}年
+                                </td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-indigo-600 uppercase italic border-r border-indigo-100/50">
+                                  {rec.person.proposedPosition}
+                                </td>
+                                <td className="px-4 py-4 border-r border-indigo-100/50 text-center">
+                                  <div className="flex items-center justify-center space-x-1">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${rec.person.currentLoad > 80 ? 'bg-red-500' : rec.person.currentLoad > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                    <span className="text-[10px] font-black text-slate-500 italic">{rec.person.currentLoad}%</span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4 text-[10px] text-indigo-800 font-bold italic border-r border-indigo-100/50 max-w-[200px]">
+                                  <div className="line-clamp-2 leading-relaxed">{rec.reason}</div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex items-center justify-center space-x-3">
+                                    <button onClick={() => setDetailPerson(rec.person)} className="p-2 text-slate-400 hover:text-indigo-600 transition-all bg-white rounded-lg shadow-sm">
+                                      <Eye size={14} />
+                                    </button>
+                                    {canEditTeam && (
+                                      <button 
+                                        onClick={() => setSelectedPersonnel(prev => prev.find(p => p.id === rec.person.id) ? prev : [...prev, rec.person])} 
+                                        className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md active:scale-95"
+                                      >
+                                        选用
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                    </section>
                    <div className="h-px bg-slate-100 w-full"></div>
                    <section className="text-left pb-10">
@@ -627,11 +697,71 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                          <div className="flex items-center italic text-left"><SearchCode size={24} className="text-slate-400 mr-3" /><h4 className="text-xs font-black text-slate-900 uppercase">全库专家人工检索轨道</h4></div>
                          <div className="relative group"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={14} /><input disabled={!canEditTeam} value={personnelSearch} onChange={e => setPersonnelSearch(e.target.value)} placeholder="检索姓名/院校/岗位..." className="pl-9 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-xl outline-none text-[11px] font-bold text-slate-700 w-64 focus:bg-white focus:border-indigo-500 transition-all" /></div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">{fullPersonnelPool.filter(p => p.name.includes(personnelSearch)).map(p => <PersonnelCard key={p.id} person={p} />)}</div>
+                      <div className="overflow-x-auto border border-slate-200 rounded-[32px] bg-white shadow-sm overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                          <thead className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest">
+                            <tr>
+                              <th className="px-4 py-4 border-r border-slate-800">姓名</th>
+                              <th className="px-4 py-4 border-r border-slate-800">职称</th>
+                              <th className="px-4 py-4 border-r border-slate-800">学历/专业</th>
+                              <th className="px-4 py-4 border-r border-slate-800 text-center">工龄</th>
+                              <th className="px-4 py-4 border-r border-slate-800 text-center">同类年限</th>
+                              <th className="px-4 py-4 border-r border-slate-800">拟任岗位</th>
+                              <th className="px-4 py-4 border-r border-slate-800 text-center">当前负荷</th>
+                              <th className="px-4 py-4 text-center">操作</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {fullPersonnelPool.filter(p => p.name.includes(personnelSearch)).map(p => (
+                              <tr key={p.id} className="hover:bg-slate-50 transition-colors group">
+                                <td className="px-4 py-4 text-xs font-black text-slate-900 italic border-r border-slate-100">
+                                  {p.name}
+                                </td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-500 uppercase italic border-r border-slate-100">
+                                  {p.title}
+                                </td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-slate-100">
+                                  {p.education} · {p.major}
+                                </td>
+                                <td className="px-4 py-4 text-xs font-black text-slate-600 italic border-r border-slate-100 text-center">
+                                  {p.years}年
+                                </td>
+                                <td className="px-4 py-4 text-xs font-black text-indigo-600 italic border-r border-slate-100 text-center">
+                                  {p.similarYears}年
+                                </td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-indigo-600 uppercase italic border-r border-slate-100">
+                                  {p.proposedPosition}
+                                </td>
+                                <td className="px-4 py-4 border-r border-slate-100 text-center">
+                                  <div className="flex items-center justify-center space-x-1">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${p.currentLoad > 80 ? 'bg-red-500' : p.currentLoad > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                    <span className="text-[10px] font-black text-slate-500 italic">{p.currentLoad}%</span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex items-center justify-center space-x-3">
+                                    <button onClick={() => setDetailPerson(p)} className="p-2 text-slate-400 hover:text-indigo-600 transition-all bg-slate-50 rounded-lg">
+                                      <Eye size={14} />
+                                    </button>
+                                    {canEditTeam && (
+                                      <button 
+                                        onClick={() => setSelectedPersonnel(prev => prev.find(i => i.id === p.id) ? prev : [...prev, p])} 
+                                        className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-md active:scale-95"
+                                      >
+                                        选用
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                    </section>
                 </div>
-                <div className="w-[450px] flex flex-col border-l border-slate-100 shrink-0">
-                  <div className="flex-[3] bg-slate-950 flex flex-col p-8 text-left overflow-hidden">
+                <div className="w-[450px] flex flex-col border-l border-slate-100 shrink-0 overflow-y-auto custom-scrollbar-dark bg-slate-950">
+                  <div className="h-[500px] shrink-0 bg-slate-950 flex flex-col p-8 text-left overflow-hidden border-b border-white/5">
                     <div className="flex items-center justify-between mb-10 text-white italic text-left">
                         <div className="flex items-center italic">
                           <UserPlus2 size={20} className="text-indigo-400 mr-3" />
@@ -687,7 +817,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                   </div>
 
                   {/* 新增：团队二次筛选 AI 对话框 */}
-                  <div className="h-[280px] flex flex-col bg-slate-900 border-t border-white/10 relative overflow-hidden">
+                  <div className="h-[400px] shrink-0 flex flex-col bg-slate-900 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/10 to-transparent pointer-events-none" />
                     <div className="px-6 py-4 border-b border-white/5 bg-slate-800/50 backdrop-blur-xl flex items-center justify-between relative z-10">
                       <div className="flex items-center space-x-3">
@@ -740,15 +870,83 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                 <div className="flex-1 flex flex-col border-r border-slate-100 p-8 space-y-10 overflow-y-auto custom-scrollbar-main bg-slate-50/20">
                    <section className="text-left">
                       <div className="flex items-center justify-between mb-6 text-left"><div className="flex items-center italic text-left"><Bot size={24} className="text-emerald-600 mr-3" /><h4 className="text-xs font-black text-slate-900 uppercase">GridGPT 语义契合推荐</h4></div><button disabled={isAiRecommending || !canEditExp} onClick={handleExpAiRecommend} className="flex items-center px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-xl disabled:opacity-30 transition-all">{isAiRecommending ? <RefreshCw className="mr-2 animate-spin" size={12}/> : <BrainCircuit size={12} className="mr-2" />} 启动智能匹配</button></div>
-                      <div className="grid grid-cols-2 gap-4">
-                         {expAiRecommendations.map((rec, idx) => (
-                            <div key={idx} className="p-6 rounded-[32px] border-2 border-emerald-100 bg-emerald-50/30 relative overflow-hidden group animate-in slide-in-from-left text-left">
-                               <div className="absolute top-0 right-0 px-6 py-1.5 bg-emerald-600 text-white text-[9px] font-black italic tracking-widest shadow-lg">匹配 {rec.matchScore}%</div>
-                               <div className="flex items-start space-x-4 mb-5 text-left"><div className="w-12 h-12 rounded-xl bg-white border border-emerald-100 flex items-center justify-center shrink-0 shadow-sm"><Trophy size={24} className="text-emerald-500" /></div><div className="flex-1 min-w-0 text-left"><h5 className="text-sm font-black text-slate-900 leading-tight mb-2 truncate pr-16 italic">{rec.project.projectName}</h5><div className="flex items-center space-x-2 text-[10px] font-bold text-slate-400"><span>{rec.project.contractYear}年</span><span>·</span><span>{rec.project.amount}W</span></div></div></div>
-                               <p className="text-[10px] text-emerald-800 font-bold mb-5 italic border-l-2 border-emerald-300 pl-3 line-clamp-2 leading-relaxed">判定：{rec.reason}</p>
-                               <div className="flex space-x-2"><button onClick={() => setDetailProject(rec.project)} className="flex-1 py-3 bg-white text-slate-500 border border-slate-200 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 flex items-center justify-center"><Eye size={12} className="mr-1.5" /> 详情</button>{canEditExp && (<button onClick={() => setSelectedProjects(prev => prev.find(p => p.id === rec.project.id) ? prev : [...prev, rec.project])} className="flex-1 py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">引用</button>)}</div>
-                            </div>
-                         ))}
+                      <div className="overflow-x-auto border-2 border-emerald-100 rounded-[32px] bg-emerald-50/30 shadow-sm overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                          <thead className="bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest">
+                            <tr>
+                              <th className="px-4 py-4 border-r border-emerald-500">匹配度</th>
+                              <th className="px-4 py-4 border-r border-emerald-500">年份</th>
+                              <th className="px-4 py-4 border-r border-emerald-500">类型</th>
+                              <th className="px-4 py-4 border-r border-emerald-500">业绩名称</th>
+                              <th className="px-4 py-4 border-r border-emerald-500">建设单位</th>
+                              <th className="px-4 py-4 border-r border-emerald-500">地点</th>
+                              <th className="px-4 py-4 border-r border-emerald-500 text-center">金额(W)</th>
+                              <th className="px-4 py-4 border-r border-emerald-500">项目负责人</th>
+                              <th className="px-4 py-4 border-r border-emerald-500">签订日期</th>
+                              <th className="px-4 py-4 border-r border-emerald-500">合同状态</th>
+                              <th className="px-4 py-4 border-r border-emerald-500">AI 判定理由</th>
+                              <th className="px-4 py-4 text-center">操作</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-emerald-100/50">
+                            {expAiRecommendations.map((rec, idx) => (
+                              <tr key={idx} className="hover:bg-emerald-100/50 transition-colors group">
+                                <td className="px-4 py-4 border-r border-emerald-100/50">
+                                  <span className="px-2 py-1 bg-emerald-600 text-white text-[10px] font-black rounded italic">
+                                    {rec.matchScore}%
+                                  </span>
+                                </td>
+                                <td className="px-4 py-4 text-xs font-black text-slate-500 italic border-r border-emerald-100/50">
+                                  {rec.project.contractYear}
+                                </td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-emerald-100/50">
+                                  {rec.project.projectType}
+                                </td>
+                                <td className="px-4 py-4 text-xs font-black text-slate-900 italic border-r border-emerald-100/50">
+                                  {rec.project.projectName}
+                                </td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-emerald-100/50">
+                                  {rec.project.clientName}
+                                </td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-emerald-100/50">
+                                  {rec.project.location}
+                                </td>
+                                <td className="px-4 py-4 text-xs font-black text-blue-600 italic border-r border-emerald-100/50 text-center">
+                                  {rec.project.amount}W
+                                </td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-600 uppercase italic border-r border-emerald-100/50">
+                                  {rec.project.leader}
+                                </td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-emerald-100/50">
+                                  {rec.project.signingDate}
+                                </td>
+                                <td className="px-4 py-4 border-r border-emerald-100/50">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase italic ${rec.project.contractStatus === '已完成' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
+                                    {rec.project.contractStatus}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-4 text-[10px] text-emerald-800 font-bold italic border-r border-emerald-100/50 max-w-[200px]">
+                                  <div className="line-clamp-2 leading-relaxed">{rec.reason}</div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex items-center justify-center space-x-3">
+                                    <button onClick={() => setDetailProject(rec.project)} className="p-2 text-slate-400 hover:text-blue-600 transition-all bg-white rounded-lg shadow-sm">
+                                      <Eye size={14} />
+                                    </button>
+                                    {canEditExp && (
+                                      <button 
+                                        onClick={() => setSelectedProjects(prev => prev.find(p => p.id === rec.project.id) ? prev : [...prev, rec.project])} 
+                                        className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md active:scale-95"
+                                      >
+                                        引用
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                    </section>
                    <div className="h-px bg-slate-100 w-full"></div>
@@ -758,21 +956,35 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                         <table className="w-full text-left border-collapse">
                           <thead className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest">
                             <tr>
-                              <th className="px-6 py-4 border-r border-slate-800">年份</th>
-                              <th className="px-6 py-4 border-r border-slate-800">业绩名称</th>
-                              <th className="px-6 py-4 border-r border-slate-800">建设单位</th>
-                              <th className="px-6 py-4 border-r border-slate-800 text-center">金额(W)</th>
-                              <th className="px-6 py-4 text-center">操作</th>
+                              <th className="px-4 py-4 border-r border-slate-800">年份</th>
+                              <th className="px-4 py-4 border-r border-slate-800">类型</th>
+                              <th className="px-4 py-4 border-r border-slate-800">业绩名称</th>
+                              <th className="px-4 py-4 border-r border-slate-800">建设单位</th>
+                              <th className="px-4 py-4 border-r border-slate-800">地点</th>
+                              <th className="px-4 py-4 border-r border-slate-800 text-center">金额(W)</th>
+                              <th className="px-4 py-4 border-r border-slate-800">项目负责人</th>
+                              <th className="px-4 py-4 border-r border-slate-800">签订日期</th>
+                              <th className="px-4 py-4 border-r border-slate-800">合同状态</th>
+                              <th className="px-4 py-4 text-center">操作</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {fullProjectPool.filter(p => p.projectName.includes(projectSearch)).map(p => (
                               <tr key={p.id} className="hover:bg-slate-50 transition-colors group">
-                                <td className="px-6 py-4 text-xs font-black text-slate-500 italic border-r border-slate-100">{p.contractYear}</td>
-                                <td className="px-6 py-4 text-xs font-black text-slate-900 italic border-r border-slate-100">{p.projectName}</td>
-                                <td className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-slate-100">{p.clientName}</td>
-                                <td className="px-6 py-4 text-xs font-black text-blue-600 italic border-r border-slate-100 text-center">{p.amount}W</td>
-                                <td className="px-6 py-4">
+                                <td className="px-4 py-4 text-xs font-black text-slate-500 italic border-r border-slate-100">{p.contractYear}</td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-slate-100">{p.projectType}</td>
+                                <td className="px-4 py-4 text-xs font-black text-slate-900 italic border-r border-slate-100">{p.projectName}</td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-slate-100">{p.clientName}</td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-slate-100">{p.location}</td>
+                                <td className="px-4 py-4 text-xs font-black text-blue-600 italic border-r border-slate-100 text-center">{p.amount}W</td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-600 uppercase italic border-r border-slate-100">{p.leader}</td>
+                                <td className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase italic border-r border-slate-100">{p.signingDate}</td>
+                                <td className="px-4 py-4 border-r border-slate-100">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase italic ${p.contractStatus === '已完成' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
+                                    {p.contractStatus}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-4">
                                   <div className="flex items-center justify-center space-x-3">
                                     <button onClick={() => setDetailProject(p)} className="p-2 text-slate-400 hover:text-blue-600 transition-all bg-slate-50 rounded-lg"><Eye size={14} /></button>
                                     {canEditExp && (<button onClick={() => setSelectedProjects(prev => prev.find(i => i.id === p.id) ? prev : [...prev, p])} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-md">选用</button>)}
@@ -785,8 +997,8 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                       </div>
                    </section>
                 </div>
-                <div className="w-[450px] flex flex-col border-l border-slate-100 shrink-0">
-                  <div className="flex-[3] bg-slate-950 flex flex-col p-8 text-left relative overflow-hidden">
+                <div className="w-[450px] flex flex-col border-l border-slate-100 shrink-0 overflow-y-auto custom-scrollbar-dark bg-slate-950">
+                  <div className="h-[500px] shrink-0 bg-slate-950 flex flex-col p-8 text-left relative overflow-hidden border-b border-white/5">
                     <div className="flex items-center justify-between mb-10 text-white italic relative z-10 text-left"><div className="flex items-center italic"><DatabaseZap size={22} className="text-emerald-400 mr-3" /><div><h4 className="text-sm font-black uppercase tracking-tighter">本工程支撑业绩池</h4></div></div><span className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-slate-400 text-[10px] font-black italic tracking-widest">{selectedProjects.length} 项已入选</span></div>
                     <div className="flex-1 space-y-4 overflow-y-auto custom-scrollbar-dark pr-2 relative z-10 text-left">
                         {selectedProjects.map((p, idx) => (
@@ -799,7 +1011,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                   </div>
 
                   {/* 新增：业绩二次筛选 AI 对话框 */}
-                  <div className="h-[280px] min-h-[280px] shrink-0 flex flex-col bg-slate-900 border-t border-white/10 relative overflow-hidden">
+                  <div className="h-[400px] shrink-0 flex flex-col bg-slate-900 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/10 to-transparent pointer-events-none" />
                     <div className="px-6 py-4 border-b border-white/5 bg-slate-800/50 backdrop-blur-xl flex items-center justify-between relative z-10">
                       <div className="flex items-center space-x-3">
