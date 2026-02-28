@@ -631,7 +631,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                    </section>
                 </div>
                 <div className="w-[450px] flex flex-col border-l border-slate-100 shrink-0">
-                  <div className="flex-1 bg-slate-950 flex flex-col p-8 text-left overflow-hidden">
+                  <div className="flex-[3] min-h-[400px] bg-slate-950 flex flex-col p-8 text-left overflow-hidden">
                     <div className="flex items-center justify-between mb-10 text-white italic text-left">
                         <div className="flex items-center italic">
                           <UserPlus2 size={20} className="text-indigo-400 mr-3" />
@@ -767,7 +767,7 @@ const BidWorkspaceView: React.FC<BidWorkspaceViewProps> = ({ currentTask, curren
                    </section>
                 </div>
                 <div className="w-[450px] flex flex-col border-l border-slate-100 shrink-0">
-                  <div className="flex-1 bg-slate-950 flex flex-col p-8 text-left relative overflow-hidden">
+                  <div className="flex-[3] min-h-[400px] bg-slate-950 flex flex-col p-8 text-left relative overflow-hidden">
                     <div className="flex items-center justify-between mb-10 text-white italic relative z-10 text-left"><div className="flex items-center italic"><DatabaseZap size={22} className="text-emerald-400 mr-3" /><div><h4 className="text-sm font-black uppercase tracking-tighter">本工程支撑业绩池</h4></div></div><span className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-slate-400 text-[10px] font-black italic tracking-widest">{selectedProjects.length} 项已入选</span></div>
                     <div className="flex-1 space-y-4 overflow-y-auto custom-scrollbar-dark pr-2 relative z-10 text-left">
                         {selectedProjects.map((p, idx) => (

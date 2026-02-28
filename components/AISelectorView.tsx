@@ -70,7 +70,7 @@ const AISelectorView: React.FC<AISelectorViewProps> = ({ plannedIds, onTogglePla
   const [keyword, setKeyword] = useState('');
   const [onlyValid, setOnlyValid] = useState(true);
   const [detailLot, setDetailLot] = useState<any | null>(null);
-  const [viewMode, setViewMode] = useState<'card' | 'excel'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'excel'>('excel');
 
   // 规则引擎状态
   const [rules, setRules] = useState<RecRule[]>([
